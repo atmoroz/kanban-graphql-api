@@ -14,3 +14,7 @@ const PORT = 4001;
 server.listen(PORT, () => {
   console.log(`🚀 GraphQL Yoga running at http://localhost:${PORT}/graphql`);
 });
+
+//Следующий шаг
+
+// 👉 Epic-01 · Step 3 — Pagination
