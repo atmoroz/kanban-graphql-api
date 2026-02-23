@@ -4,12 +4,15 @@ import { commonTypes } from './types/common';
 import { scalarTypes } from './types/scalars';
 import { boardTypes } from './types/board';
 import { columnTypes } from './types/column';
+import { taskTypes } from './types/task';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
+import { taskQueries } from './queries/tasks';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
+import { taskMutations } from './mutations/task';
 
 import { healthResolvers, healthTypeDefs } from './queries/health';
 import { mutationTypeDefs } from './mutations';
@@ -29,6 +32,9 @@ export const schema = createSchema({
     boardMutations,
     columnMutations,
     mutationTypeDefs,
+    taskTypes,
+    taskQueries,
+    taskMutations,
   ],
   resolvers: [
     {
