@@ -70,6 +70,10 @@ export function updateTask(
 ): TaskRecord {
   const task = getTaskById(id);
 
+  if (input.title !== undefined && !input.title.trim()) {
+    validationFailed('Task title cannot be empty');
+  }
+
   Object.assign(task, input, {
     updatedAt: new Date(),
   });
@@ -94,27 +98,72 @@ export function deleteTask(id: string): boolean {
 export function moveTask(
   id: string,
   targetColumnId: string,
-  newPosition: number,
+  position?: number,
 ): TaskRecord {
   const task = getTaskById(id);
 
-  const sourceColumnId = task.columnId;
-  const sourceTasks = listTasksInColumn(sourceColumnId);
-  const targetTasks = listTasksInColumn(targetColumnId);
+  const targetColumnExists = columns.some(c => c.id === targetColumnId);
+  if (!targetColumnExists) notFound('Column');
 
-  if (newPosition < 0 || newPosition > targetTasks.length) {
+  const sourceColumnId = task.columnId;
+
+  const sourceTasks = listTasksInColumn(sourceColumnId);
+  const targetTasks =
+    sourceColumnId === targetColumnId
+      ? sourceTasks
+      : listTasksInColumn(targetColumnId);
+
+  const newPosition = position !== undefined ? position : targetTasks.length;
+
+  const maxPosition =
+    targetTasks.length - (sourceColumnId === targetColumnId ? 1 : 0);
+
+  if (newPosition < 0 || newPosition > maxPosition) {
     validationFailed('Invalid task position');
   }
 
-  sourceTasks
-    .filter(t => t.position > task.position)
-    .forEach(t => t.position--);
+  if (sourceColumnId === targetColumnId) {
+    const oldPosition = task.position;
 
-  targetTasks.filter(t => t.position >= newPosition).forEach(t => t.position++);
+    if (oldPosition !== newPosition) {
+      targetTasks.forEach(t => {
+        if (t.id === task.id) return;
 
-  task.columnId = targetColumnId;
-  task.position = newPosition;
+        if (
+          oldPosition < newPosition &&
+          t.position > oldPosition &&
+          t.position <= newPosition
+        ) {
+          t.position--;
+        }
+
+        if (
+          oldPosition > newPosition &&
+          t.position < oldPosition &&
+          t.position >= newPosition
+        ) {
+          t.position++;
+        }
+      });
+
+      task.position = newPosition;
+    }
+  }
+
+  // ➡️ ПЕРЕМЕЩЕНИЕ В ДРУГУЮ КОЛОНКУ
+  else {
+    sourceTasks
+      .filter(t => t.position > task.position)
+      .forEach(t => t.position--);
+
+    targetTasks
+      .filter(t => t.position >= newPosition)
+      .forEach(t => t.position++);
+
+    task.columnId = targetColumnId;
+    task.position = newPosition;
+  }
+
   task.updatedAt = new Date();
-
   return task;
 }

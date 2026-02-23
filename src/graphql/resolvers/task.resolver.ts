@@ -63,11 +63,7 @@ export const taskResolvers = {
 
     moveTask: (
       _: unknown,
-      args: {
-        id: string;
-        columnId: string;
-        position: number;
-      },
+      args: { id: string; columnId: string; position?: number },
     ) => {
       return moveTask(args.id, args.columnId, args.position);
     },

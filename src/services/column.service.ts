@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getBoardById } from './board.service';
 import { columns, ColumnRecord } from '../data/mock/columns';
 import { notFound, validationFailed } from '../lib/errors';
+import { tasks } from '../data/mock/tasks';
 
 export function listColumns(boardId: string): ColumnRecord[] {
   return columns
@@ -51,12 +52,16 @@ export function updateColumn(id: string, title: string): ColumnRecord {
 
 export function deleteColumn(id: string): boolean {
   const index = columns.findIndex(c => c.id === id);
-  if (index === -1) {
-    notFound('Column');
-  }
+  if (index === -1) notFound('Column');
 
   const { boardId, position } = columns[index];
   columns.splice(index, 1);
+
+  for (let i = tasks.length - 1; i >= 0; i--) {
+    if (tasks[i].columnId === id) {
+      tasks.splice(i, 1);
+    }
+  }
 
   columns
     .filter(c => c.boardId === boardId && c.position > position)

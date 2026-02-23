@@ -23,7 +23,7 @@ export const taskMutations = `
     moveTask(
       id: ID!
       columnId: ID!
-      position: Int!
+      position: Int
     ): Task!
   }
 `;
