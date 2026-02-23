@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { columns, ColumnRecord } from '../data/mocks/columns';
+import { getBoardById } from './board.service';
+import { columns, ColumnRecord } from '../data/mock/columns';
 import { notFound, validationFailed } from '../lib/errors';
 
 export function listColumns(boardId: string): ColumnRecord[] {
@@ -12,6 +13,7 @@ export function createColumn(boardId: string, title: string): ColumnRecord {
   if (!boardId) {
     validationFailed('boardId is required');
   }
+  getBoardById(boardId);
 
   if (!title.trim()) {
     validationFailed('Column title cannot be empty');

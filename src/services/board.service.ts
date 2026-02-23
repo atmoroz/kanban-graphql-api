@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { boards, BoardRecord } from '../data/mocks/boards';
+import { boards, BoardRecord } from '../data/mock/boards';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
-import { columns } from '../data/mocks/columns';
+import { columns } from '../data/mock/columns';
 
 export function getBoardById(id: string): BoardRecord {
   const board = boards.find(b => b.id === id);
