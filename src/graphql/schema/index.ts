@@ -9,16 +9,17 @@ import { taskTypes } from './types/task';
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
 import { taskQueries } from './queries/tasks';
+import { healthResolvers, healthTypeDefs } from './queries/health';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
 import { taskMutations } from './mutations/task';
-
-import { healthResolvers, healthTypeDefs } from './queries/health';
 import { mutationTypeDefs } from './mutations';
+
 import { dateTimeResolver } from '../resolvers/scalars';
 import { boardResolvers } from '../resolvers/board.resolver';
 import { columnResolvers } from '../resolvers/column.resolver';
+import { taskResolvers } from '../resolvers/task.resolver';
 
 export const schema = createSchema({
   typeDefs: [
@@ -43,5 +44,6 @@ export const schema = createSchema({
     healthResolvers,
     boardResolvers,
     columnResolvers,
+    taskResolvers,
   ],
 });
