@@ -43,12 +43,14 @@ export const forbidden = (message = 'Forbidden', entity?: string) =>
     entity,
   });
 
-export const notFound = (entity: string, message?: string) =>
-  throwApiError({
-    code: ErrorCode.NOT_FOUND,
-    message: message ?? `${entity} not found`,
-    entity,
+export function notFound(entity: string): never {
+  throw new GraphQLError(`${entity} not found`, {
+    extensions: {
+      code: ErrorCode.NOT_FOUND,
+      entity,
+    },
   });
+}
 
 export function validationFailed(message: string, reason?: string): never {
   throw new GraphQLError(message, {
