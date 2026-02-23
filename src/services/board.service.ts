@@ -4,6 +4,9 @@ import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { columns } from '../data/mock/columns';
 
+export type BoardSortBy = 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
+export type SortOrder = 'ASC' | 'DESC';
+
 export function getBoardById(id: string): BoardRecord {
   const board = boards.find(b => b.id === id);
   if (!board) {
@@ -13,13 +16,19 @@ export function getBoardById(id: string): BoardRecord {
 }
 
 export function listBoards(
-  args: PaginationArgs & { visibility?: 'PUBLIC' | 'PRIVATE' },
+  args: PaginationArgs & {
+    sortBy?: BoardSortBy;
+    sortOrder?: SortOrder;
+    visibility?: 'PUBLIC' | 'PRIVATE';
+  },
 ) {
   let result = boards;
 
   if (args.visibility) {
     result = result.filter(b => b.visibility === args.visibility);
   }
+
+  result = sortBoards(result, args.sortBy, args.sortOrder);
 
   return paginateArray(result, args);
 }
@@ -71,4 +80,26 @@ export function deleteBoard(id: string): boolean {
   }
 
   return true;
+}
+
+function sortBoards(
+  boards: BoardRecord[],
+  sortBy: BoardSortBy = 'CREATED_AT',
+  sortOrder: SortOrder = 'ASC',
+): BoardRecord[] {
+  const direction = sortOrder === 'ASC' ? 1 : -1;
+
+  return [...boards].sort((a, b) => {
+    switch (sortBy) {
+      case 'NAME':
+        return a.title.localeCompare(b.title) * direction;
+
+      case 'UPDATED_AT':
+        return (a.updatedAt.getTime() - b.updatedAt.getTime()) * direction;
+
+      case 'CREATED_AT':
+      default:
+        return (a.createdAt.getTime() - b.createdAt.getTime()) * direction;
+    }
+  });
 }
