@@ -1,3 +1,5 @@
+import { validationFailed } from './errors';
+
 export type PageInfo = {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
@@ -20,7 +22,11 @@ export function encodeCursor(value: string | number): string {
 }
 
 export function decodeCursor(cursor: string): string {
-  return Buffer.from(cursor, 'base64').toString('utf-8');
+  try {
+    return Buffer.from(cursor, 'base64').toString('utf-8');
+  } catch {
+    validationFailed('Invalid cursor');
+  }
 }
 
 export type PaginationArgs = {
@@ -37,11 +43,11 @@ export function paginateArray<T extends { id: string }>(
   const { first, after, last, before } = args;
 
   if (first && last) {
-    throw new Error('Cannot use first and last together');
+    validationFailed('Cannot use first and last together');
   }
 
   if (after && before) {
-    throw new Error('Cannot use after and before together');
+    validationFailed('Cannot use after and before together');
   }
 
   let start = 0;
@@ -73,6 +79,18 @@ export function paginateArray<T extends { id: string }>(
     node: item,
     cursor: encodeCursor(item.id),
   }));
+
+  if (edges.length === 0) {
+    return {
+      edges: [],
+      pageInfo: {
+        hasPreviousPage: start > 0,
+        hasNextPage: end < items.length,
+        startCursor: null,
+        endCursor: null,
+      },
+    };
+  }
 
   const firstEdgeIndex = items.findIndex(i => i.id === edges[0]?.node.id);
   const lastEdgeIndex = items.findIndex(

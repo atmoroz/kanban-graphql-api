@@ -50,12 +50,14 @@ export const notFound = (entity: string, message?: string) =>
     entity,
   });
 
-export const validationFailed = (message: string, reason?: string) =>
-  throwApiError({
-    code: ErrorCode.VALIDATION_FAILED,
-    message,
-    reason,
+export function validationFailed(message: string, reason?: string): never {
+  throw new GraphQLError(message, {
+    extensions: {
+      code: ErrorCode.VALIDATION_FAILED,
+      reason,
+    },
   });
+}
 
 export const conflict = (message: string, entity?: string) =>
   throwApiError({
