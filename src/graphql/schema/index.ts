@@ -5,11 +5,14 @@ import { scalarTypes } from './types/scalars';
 import { boardTypes } from './types/board';
 import { columnTypes } from './types/column';
 import { taskTypes } from './types/task';
+import { sortTypes } from './types/sort';
+import { taskFilterTypes } from './types/task-filters';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
 import { taskQueries } from './queries/tasks';
 import { healthResolvers, healthTypeDefs } from './queries/health';
+import { tasksByBoardQuery } from './queries/tasks-by-board';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
@@ -20,11 +23,14 @@ import { dateTimeResolver } from '../resolvers/scalars';
 import { boardResolvers } from '../resolvers/board.resolver';
 import { columnResolvers } from '../resolvers/column.resolver';
 import { taskResolvers } from '../resolvers/task.resolver';
+import { taskSearchResolvers } from '../resolvers/task-search.resolver';
 
 export const schema = createSchema({
   typeDefs: [
     commonTypes,
     scalarTypes,
+    sortTypes,
+    taskFilterTypes,
     boardTypes,
     columnTypes,
     healthTypeDefs,
@@ -33,6 +39,8 @@ export const schema = createSchema({
     boardMutations,
     columnMutations,
     mutationTypeDefs,
+    tasksByBoardQuery,
+
     taskTypes,
     taskQueries,
     taskMutations,
@@ -45,5 +53,6 @@ export const schema = createSchema({
     boardResolvers,
     columnResolvers,
     taskResolvers,
+    taskSearchResolvers,
   ],
 });
