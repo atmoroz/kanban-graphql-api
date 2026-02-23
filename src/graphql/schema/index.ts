@@ -11,9 +11,11 @@ import { columnQueries } from './queries/columns';
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
 
-import { healthTypeDefs } from './queries/health';
+import { healthResolvers, healthTypeDefs } from './queries/health';
 import { mutationTypeDefs } from './mutations';
-import { dateTimeResolver } from './resolvers/scalars';
+import { dateTimeResolver } from '../resolvers/scalars';
+import { boardResolvers } from '../resolvers/board.resolver';
+import { columnResolvers } from '../resolvers/column.resolver';
 
 export const schema = createSchema({
   typeDefs: [
@@ -32,5 +34,8 @@ export const schema = createSchema({
     {
       DateTime: dateTimeResolver,
     },
+    healthResolvers,
+    boardResolvers,
+    columnResolvers,
   ],
 });

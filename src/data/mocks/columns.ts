@@ -1,5 +1,3 @@
-import { v4 as uuid } from 'uuid';
-
 export type ColumnRecord = {
   id: string;
   boardId: string;

@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { boards, BoardRecord } from '../data/mocks/boards';
-import { notFound } from '../lib/errors';
+import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
-import { v4 as uuid } from 'uuid';
+import { columns } from '../data/mocks/columns';
 
 export function getBoardById(id: string): BoardRecord {
   const board = boards.find(b => b.id === id);
@@ -28,8 +29,11 @@ export function createBoard(input: {
   description?: string;
   visibility: 'PUBLIC' | 'PRIVATE';
 }): BoardRecord {
+  if (!input.title.trim()) {
+    validationFailed('Board title cannot be empty');
+  }
   const board: BoardRecord = {
-    id: uuid(),
+    id: randomUUID(),
     title: input.title,
     description: input.description,
     visibility: input.visibility,
@@ -56,10 +60,15 @@ export function updateBoard(
 
 export function deleteBoard(id: string): boolean {
   const index = boards.findIndex(b => b.id === id);
-  if (index === -1) {
-    notFound('Board');
-  }
+  if (index === -1) notFound('Board');
 
   boards.splice(index, 1);
+
+  for (let i = columns.length - 1; i >= 0; i--) {
+    if (columns[i].boardId === id) {
+      columns.splice(i, 1);
+    }
+  }
+
   return true;
 }

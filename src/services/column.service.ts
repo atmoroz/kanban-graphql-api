@@ -1,6 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { columns, ColumnRecord } from '../data/mocks/columns';
-import { notFound } from '../lib/errors';
-import { v4 as uuid } from 'uuid';
+import { notFound, validationFailed } from '../lib/errors';
 
 export function listColumns(boardId: string): ColumnRecord[] {
   return columns
@@ -9,11 +9,19 @@ export function listColumns(boardId: string): ColumnRecord[] {
 }
 
 export function createColumn(boardId: string, title: string): ColumnRecord {
+  if (!boardId) {
+    validationFailed('boardId is required');
+  }
+
+  if (!title.trim()) {
+    validationFailed('Column title cannot be empty');
+  }
+
   const boardColumns = listColumns(boardId);
   const position = boardColumns.length;
 
   const column: ColumnRecord = {
-    id: uuid(),
+    id: randomUUID(),
     boardId,
     title,
     position,
@@ -26,6 +34,9 @@ export function createColumn(boardId: string, title: string): ColumnRecord {
 }
 
 export function updateColumn(id: string, title: string): ColumnRecord {
+  if (!title.trim()) {
+    validationFailed('Column title cannot be empty');
+  }
   const column = columns.find(c => c.id === id);
   if (!column) {
     notFound('Column');
@@ -54,17 +65,21 @@ export function deleteColumn(id: string): boolean {
 
 export function moveColumn(id: string, newPosition: number): ColumnRecord[] {
   const column = columns.find(c => c.id === id);
-  if (!column) {
-    notFound('Column');
-  }
+  if (!column) notFound('Column');
 
   const boardColumns = listColumns(column.boardId);
+  const maxPosition = boardColumns.length - 1;
+
+  if (newPosition < 0 || newPosition > maxPosition) {
+    validationFailed('Invalid column position');
+  }
 
   const oldPosition = column.position;
 
   boardColumns.forEach(c => {
-    if (c.id === id) return;
+    if (c.id === column.id) return;
 
+    // moving right
     if (
       oldPosition < newPosition &&
       c.position > oldPosition &&
@@ -73,6 +88,7 @@ export function moveColumn(id: string, newPosition: number): ColumnRecord[] {
       c.position--;
     }
 
+    // moving left
     if (
       oldPosition > newPosition &&
       c.position < oldPosition &&

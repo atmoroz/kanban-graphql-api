@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 export type BoardRecord = {
   id: string;
@@ -11,7 +11,7 @@ export type BoardRecord = {
 
 export const boards: BoardRecord[] = [
   {
-    id: uuid(),
+    id: randomUUID(),
     title: 'Public board',
     description: 'Demo public board',
     visibility: 'PUBLIC',
@@ -19,7 +19,7 @@ export const boards: BoardRecord[] = [
     updatedAt: new Date(),
   },
   {
-    id: uuid(),
+    id: randomUUID(),
     title: 'Private board',
     visibility: 'PRIVATE',
     createdAt: new Date(),

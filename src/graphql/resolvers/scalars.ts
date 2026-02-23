@@ -1,5 +1,5 @@
 import { GraphQLScalarType, Kind } from 'graphql';
-import { validationFailed } from '../../../lib/errors';
+import { validationFailed } from '../../lib/errors';
 
 export const dateTimeResolver = new GraphQLScalarType({
   name: 'DateTime',
