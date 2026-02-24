@@ -30,11 +30,11 @@ export function throwApiError({
   });
 }
 
-export const unauthorized = (message = 'Unauthorized') =>
-  throwApiError({
-    code: ErrorCode.UNAUTHORIZED,
-    message,
+export function unauthorized(message: string): never {
+  throw new GraphQLError(message, {
+    extensions: { code: 'UNAUTHORIZED' },
   });
+}
 
 export const forbidden = (message = 'Forbidden', entity?: string) =>
   throwApiError({
