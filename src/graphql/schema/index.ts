@@ -1,4 +1,4 @@
-import { createSchema } from 'graphql-yoga';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import { commonTypes } from './types/common';
 import { scalarTypes } from './types/scalars';
@@ -27,8 +27,10 @@ import { boardResolvers } from '../resolvers/board.resolver';
 import { columnResolvers } from '../resolvers/column.resolver';
 import { taskResolvers } from '../resolvers/task.resolver';
 import { taskSearchResolvers } from '../resolvers/task-search.resolver';
+import { authResolvers } from '../resolvers/auth.resolver';
+import { GraphQLContext } from '../context';
 
-export const schema = createSchema({
+export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
     commonTypes,
     scalarTypes,
@@ -64,5 +66,6 @@ export const schema = createSchema({
     columnResolvers,
     taskResolvers,
     taskSearchResolvers,
+    authResolvers,
   ],
 });
