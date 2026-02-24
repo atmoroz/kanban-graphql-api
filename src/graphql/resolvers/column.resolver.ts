@@ -1,4 +1,5 @@
-import { unauthorized } from '../../lib/errors';
+import { columns } from '../../data/mock/columns';
+import { notFound, unauthorized } from '../../lib/errors';
 import { assertBoardPermission } from '../../lib/permissions';
 import { getBoardById } from '../../services/board.service';
 import {
@@ -33,19 +34,94 @@ export const columnResolvers = {
   },
 
   Mutation: {
-    createColumn: (_: unknown, args: { boardId: string; title: string }) => {
+    createColumn: (
+      _: unknown,
+      args: {
+        boardId: string;
+        title: string;
+        position?: number;
+      },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      assertBoardPermission(args.boardId, ctx.currentUser.id, BoardRole.ADMIN);
+
       return createColumn(args.boardId, args.title);
     },
 
-    updateColumn: (_: unknown, args: { id: string; title: string }) => {
-      return updateColumn(args.id, args.title);
+    updateColumn: (
+      _: unknown,
+      args: {
+        id: string;
+        title?: string;
+        position?: number;
+      },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      const column = columns.find(c => c.id === args.id);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
+
+      return updateColumn(args.id, args.title ?? '');
     },
 
-    deleteColumn: (_: unknown, args: { id: string }) => {
-      return deleteColumn(args.id);
+    deleteColumn: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      const column = columns.find(c => c.id === id);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
+
+      deleteColumn(id);
+      return true;
     },
 
-    moveColumn: (_: unknown, args: { id: string; newPosition: number }) => {
+    moveColumn: (
+      _: unknown,
+      args: {
+        id: string;
+        newPosition: number;
+      },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      const column = columns.find(c => c.id === args.id);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
+
       return moveColumn(args.id, args.newPosition);
     },
   },

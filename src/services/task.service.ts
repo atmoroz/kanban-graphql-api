@@ -4,6 +4,7 @@ import { tasks, TaskRecord } from '../data/mock/tasks';
 import { columns } from '../data/mock/columns';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
+import { TaskPriority } from '../types/task';
 
 export function getTaskById(id: string): TaskRecord {
   const task = tasks.find(b => b.id === id);
@@ -31,7 +32,7 @@ export function createTask(input: {
   columnId: string;
   title: string;
   description?: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority?: TaskPriority;
   dueDate?: Date;
   assigneeId?: string | null;
 }): TaskRecord {
@@ -48,15 +49,27 @@ export function createTask(input: {
     id: randomUUID(),
     columnId: input.columnId,
     title: input.title,
-    description: input.description,
-    priority: input.priority,
-    dueDate: input.dueDate,
-    assigneeId: input.assigneeId ?? null,
     position,
     statusId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+
+  if (input.description !== undefined) {
+    task.description = input.description;
+  }
+
+  if (input.priority !== undefined) {
+    task.priority = input.priority;
+  }
+
+  if (input.dueDate !== undefined) {
+    task.dueDate = input.dueDate;
+  }
+
+  if (input.assigneeId !== undefined) {
+    task.assigneeId = input.assigneeId;
+  }
 
   tasks.push(task);
   return task;
