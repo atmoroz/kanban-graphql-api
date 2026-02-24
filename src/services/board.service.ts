@@ -4,7 +4,7 @@ import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { columns } from '../data/mock/columns';
 import { BoardRole } from '../graphql/schema/types/board-role';
-import { addBoardMember } from '../data/mock/board-members';
+import { addBoardMember, isBoardMember } from '../data/mock/board-members';
 
 export type BoardSortBy = 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
 export type SortOrder = 'ASC' | 'DESC';
@@ -17,23 +17,23 @@ export function getBoardById(id: string): BoardRecord {
   return board as unknown as BoardRecord;
 }
 
-export function listBoards(
-  args: PaginationArgs & {
-    sortBy?: BoardSortBy;
-    sortOrder?: SortOrder;
-    visibility?: 'PUBLIC' | 'PRIVATE';
-  },
-) {
-  let result = boards;
+// export function listBoards(
+//   args: PaginationArgs & {
+//     sortBy?: BoardSortBy;
+//     sortOrder?: SortOrder;
+//     visibility?: 'PUBLIC' | 'PRIVATE';
+//   },
+// ) {
+//   let result = boards;
 
-  if (args.visibility) {
-    result = result.filter(b => b.visibility === args.visibility);
-  }
+//   if (args.visibility) {
+//     result = result.filter(b => b.visibility === args.visibility);
+//   }
 
-  result = sortBoards(result, args.sortBy, args.sortOrder);
+//   result = sortBoards(result, args.sortBy, args.sortOrder);
 
-  return paginateArray(result, args);
-}
+//   return paginateArray(result, args);
+// }
 
 export function createBoard(input: {
   title: string;
@@ -93,7 +93,7 @@ export function deleteBoard(id: string): boolean {
   return true;
 }
 
-function sortBoards(
+export function sortBoards(
   boards: BoardRecord[],
   sortBy: BoardSortBy = 'CREATED_AT',
   sortOrder: SortOrder = 'ASC',
@@ -113,4 +113,16 @@ function sortBoards(
         return (a.createdAt.getTime() - b.createdAt.getTime()) * direction;
     }
   });
+}
+
+export function listBoardsForUser(userId?: string) {
+  // без auth → только PUBLIC
+  if (!userId) {
+    return boards.filter(b => b.visibility === 'PUBLIC');
+  }
+
+  // auth → PUBLIC + PRIVATE, где пользователь участник
+  return boards.filter(
+    b => b.visibility === 'PUBLIC' || isBoardMember(b.id, userId),
+  );
 }

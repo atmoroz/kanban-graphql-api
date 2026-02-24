@@ -1,10 +1,13 @@
 import { unauthorized } from '../../lib/errors';
+import { paginateArray } from '../../lib/pagination';
 import {
   getBoardById,
-  listBoards,
+  listBoardsForUser,
   createBoard,
   updateBoard,
   deleteBoard,
+  sortBoards,
+  BoardSortBy,
 } from '../../services/board.service';
 import { GraphQLContext } from '../context';
 
@@ -17,16 +20,24 @@ export const boardResolvers = {
     boards: (
       _: unknown,
       args: {
-        sortBy?: 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
-        sortOrder?: 'ASC' | 'DESC';
-        visibility?: 'PUBLIC' | 'PRIVATE';
         first?: number;
         after?: string;
         last?: number;
         before?: string;
+        sortBy?: string;
+        sortOrder?: 'ASC' | 'DESC';
       },
+      ctx: GraphQLContext,
     ) => {
-      return listBoards(args);
+      const filtered = listBoardsForUser(ctx.currentUser?.id);
+
+      const sorted = sortBoards(
+        filtered,
+        args.sortBy as BoardSortBy,
+        args.sortOrder,
+      );
+
+      return paginateArray(sorted, args);
     },
   },
 

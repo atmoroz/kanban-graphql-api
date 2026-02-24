@@ -46,3 +46,7 @@ export function updateBoardMemberRole(
   member.role = role;
   return member;
 }
+
+export function isBoardMember(boardId: string, userId: string): boolean {
+  return boardMembers.some(m => m.boardId === boardId && m.userId === userId);
+}
