@@ -33,6 +33,7 @@ import { taskResolvers } from '../resolvers/task.resolver';
 import { taskSearchResolvers } from '../resolvers/task-search.resolver';
 import { authResolvers } from '../resolvers/auth.resolver';
 import { GraphQLContext } from '../context';
+import { boardMemberResolvers } from '../resolvers/board-member.resolver';
 
 export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
@@ -76,5 +77,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     taskResolvers,
     taskSearchResolvers,
     authResolvers,
+    boardMemberResolvers,
   ],
 });

@@ -1,3 +1,4 @@
+import { unauthorized } from '../../lib/errors';
 import {
   getBoardById,
   listBoards,
@@ -5,6 +6,7 @@ import {
   updateBoard,
   deleteBoard,
 } from '../../services/board.service';
+import { GraphQLContext } from '../context';
 
 export const boardResolvers = {
   Query: {
@@ -36,8 +38,16 @@ export const boardResolvers = {
         description?: string;
         visibility: 'PUBLIC' | 'PRIVATE';
       },
+      ctx: GraphQLContext,
     ) => {
-      return createBoard(args);
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      return createBoard({
+        ...args,
+        ownerId: ctx.currentUser.id,
+      });
     },
 
     updateBoard: (
