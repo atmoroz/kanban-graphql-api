@@ -1,5 +1,6 @@
 import { unauthorized } from '../../lib/errors';
 import { paginateArray } from '../../lib/pagination';
+import { assertBoardPermission } from '../../lib/permissions';
 import {
   getBoardById,
   listBoardsForUser,
@@ -10,11 +11,22 @@ import {
   BoardSortBy,
 } from '../../services/board.service';
 import { GraphQLContext } from '../context';
+import { BoardRole } from '../schema/types/board-role';
 
 export const boardResolvers = {
   Query: {
-    board: (_: unknown, args: { id: string }) => {
-      return getBoardById(args.id);
+    board: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      const board = getBoardById(id);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
+      return board;
     },
 
     boards: (

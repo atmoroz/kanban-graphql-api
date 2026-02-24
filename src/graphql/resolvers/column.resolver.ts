@@ -1,3 +1,6 @@
+import { unauthorized } from '../../lib/errors';
+import { assertBoardPermission } from '../../lib/permissions';
+import { getBoardById } from '../../services/board.service';
 import {
   listColumns,
   createColumn,
@@ -5,11 +8,27 @@ import {
   deleteColumn,
   moveColumn,
 } from '../../services/column.service';
+import { GraphQLContext } from '../context';
+import { BoardRole } from '../schema/types/board-role';
 
 export const columnResolvers = {
   Query: {
-    columns: (_: unknown, args: { boardId: string }) => {
-      return listColumns(args.boardId);
+    columns: (
+      _: unknown,
+      { boardId }: { boardId: string },
+      ctx: GraphQLContext,
+    ) => {
+      const board = getBoardById(boardId);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
+      return listColumns(boardId);
     },
   },
 

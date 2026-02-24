@@ -1,3 +1,8 @@
+import { columns } from '../../data/mock/columns';
+import { notFound, unauthorized } from '../../lib/errors';
+import { assertBoardPermission } from '../../lib/permissions';
+import { getBoardById, SortOrder } from '../../services/board.service';
+import { TaskSortBy } from '../../services/task-search.service';
 import {
   getTaskById,
   listTasksByColumn,
@@ -6,11 +11,28 @@ import {
   deleteTask,
   moveTask,
 } from '../../services/task.service';
+import { GraphQLContext } from '../context';
+import { BoardRole } from '../schema/types/board-role';
 
 export const taskResolvers = {
   Query: {
-    task: (_: unknown, args: { id: string }) => {
-      return getTaskById(args.id);
+    task: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      const task = getTaskById(id);
+      const column = columns.find(c => c.id === task.columnId);
+      if (!column) {
+        notFound('Column');
+      }
+      const board = getBoardById(column.boardId);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
+      return task;
     },
 
     tasksByColumn: (
@@ -21,10 +43,29 @@ export const taskResolvers = {
         after?: string;
         last?: number;
         before?: string;
+        sortBy?: TaskSortBy;
+        sortOrder?: SortOrder;
       },
+      ctx: GraphQLContext,
     ) => {
-      const { columnId, ...pagination } = args;
-      return listTasksByColumn(columnId, pagination);
+      const { columnId, ...paginationArgs } = args;
+
+      const column = columns.find(c => c.id === columnId);
+      if (!column) {
+        notFound('Column');
+      }
+
+      const board = getBoardById(column.boardId);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
+      return listTasksByColumn(columnId, paginationArgs);
     },
   },
 
