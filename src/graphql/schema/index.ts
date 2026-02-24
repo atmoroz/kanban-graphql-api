@@ -8,6 +8,8 @@ import { taskTypes } from './types/task';
 import { sortTypes } from './types/sort';
 import { taskFilterTypes } from './types/task-filters';
 import { userTypes } from './types/user';
+import { roleTypes } from './types/roles';
+import { boardMemberTypes } from './types/board-member';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
@@ -15,12 +17,14 @@ import { taskQueries } from './queries/tasks';
 import { healthResolvers, healthTypeDefs } from './queries/health';
 import { tasksByBoardQuery } from './queries/tasks-by-board';
 import { authQueries } from './queries/auth';
+import { boardMemberQueries } from './queries/board-members';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
 import { taskMutations } from './mutations/task';
 import { mutationTypeDefs } from './mutations';
 import { authMutations } from './mutations/auth';
+import { boardMemberMutations } from './mutations/board-members';
 
 import { dateTimeResolver } from '../resolvers/scalars';
 import { boardResolvers } from '../resolvers/board.resolver';
@@ -56,6 +60,11 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     userTypes,
     authQueries,
     authMutations,
+
+    roleTypes,
+    boardMemberTypes,
+    boardMemberQueries,
+    boardMemberMutations,
   ],
   resolvers: [
     {
