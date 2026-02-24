@@ -1,9 +1,11 @@
+import { TaskPriority } from '../../types/task';
+
 export type TaskRecord = {
   id: string;
   columnId: string;
   title: string;
   description?: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority?: TaskPriority;
   dueDate?: Date;
   assigneeId?: string | null;
   position: number;

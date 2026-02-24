@@ -1,32 +1,55 @@
 import { unauthorized } from '../../lib/errors';
+import { paginateArray } from '../../lib/pagination';
+import { assertBoardPermission } from '../../lib/permissions';
 import {
   getBoardById,
-  listBoards,
+  listBoardsForUser,
   createBoard,
   updateBoard,
   deleteBoard,
+  sortBoards,
+  BoardSortBy,
 } from '../../services/board.service';
 import { GraphQLContext } from '../context';
+import { BoardRole } from '../schema/types/board-role';
 
 export const boardResolvers = {
   Query: {
-    board: (_: unknown, args: { id: string }) => {
-      return getBoardById(args.id);
+    board: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      const board = getBoardById(id);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
+      return board;
     },
 
     boards: (
       _: unknown,
       args: {
-        sortBy?: 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
-        sortOrder?: 'ASC' | 'DESC';
-        visibility?: 'PUBLIC' | 'PRIVATE';
         first?: number;
         after?: string;
         last?: number;
         before?: string;
+        sortBy?: string;
+        sortOrder?: 'ASC' | 'DESC';
       },
+      ctx: GraphQLContext,
     ) => {
-      return listBoards(args);
+      const filtered = listBoardsForUser(ctx.currentUser?.id);
+
+      const sorted = sortBoards(
+        filtered,
+        args.sortBy as BoardSortBy,
+        args.sortOrder,
+      );
+
+      return paginateArray(sorted, args);
     },
   },
 
@@ -58,13 +81,26 @@ export const boardResolvers = {
         description?: string;
         visibility?: 'PUBLIC' | 'PRIVATE';
       },
+      ctx: GraphQLContext,
     ) => {
-      const { id, ...input } = args;
-      return updateBoard(id, input);
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      assertBoardPermission(args.id, ctx.currentUser.id, BoardRole.ADMIN);
+
+      return updateBoard(args.id, args);
     },
 
-    deleteBoard: (_: unknown, args: { id: string }) => {
-      return deleteBoard(args.id);
+    deleteBoard: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      assertBoardPermission(id, ctx.currentUser.id, BoardRole.OWNER);
+
+      deleteBoard(id);
+      return true;
     },
   },
 };
