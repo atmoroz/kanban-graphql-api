@@ -3,6 +3,8 @@ import { boards, BoardRecord } from '../data/mock/boards';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { columns } from '../data/mock/columns';
+import { BoardRole } from '../graphql/schema/types/board-role';
+import { addBoardMember } from '../data/mock/board-members';
 
 export type BoardSortBy = 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
 export type SortOrder = 'ASC' | 'DESC';
@@ -37,20 +39,29 @@ export function createBoard(input: {
   title: string;
   description?: string;
   visibility: 'PUBLIC' | 'PRIVATE';
-}): BoardRecord {
-  if (!input.title.trim()) {
-    validationFailed('Board title cannot be empty');
-  }
+  ownerId?: string;
+}) {
   const board: BoardRecord = {
     id: randomUUID(),
     title: input.title,
-    description: input.description,
     visibility: input.visibility,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
+  if (input.description !== undefined) {
+    board.description = input.description;
+  }
   boards.push(board);
+
+  if (input.ownerId) {
+    addBoardMember({
+      boardId: board.id,
+      userId: input.ownerId,
+      role: BoardRole.OWNER,
+    });
+  }
+
   return board;
 }
 
