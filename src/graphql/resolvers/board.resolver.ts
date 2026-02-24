@@ -81,13 +81,26 @@ export const boardResolvers = {
         description?: string;
         visibility?: 'PUBLIC' | 'PRIVATE';
       },
+      ctx: GraphQLContext,
     ) => {
-      const { id, ...input } = args;
-      return updateBoard(id, input);
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      assertBoardPermission(args.id, ctx.currentUser.id, BoardRole.ADMIN);
+
+      return updateBoard(args.id, args);
     },
 
-    deleteBoard: (_: unknown, args: { id: string }) => {
-      return deleteBoard(args.id);
+    deleteBoard: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      if (!ctx.currentUser) {
+        unauthorized('Authentication required');
+      }
+
+      assertBoardPermission(id, ctx.currentUser.id, BoardRole.OWNER);
+
+      deleteBoard(id);
+      return true;
     },
   },
 };
