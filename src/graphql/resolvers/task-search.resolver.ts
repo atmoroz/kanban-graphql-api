@@ -1,6 +1,9 @@
-// src/graphql/resolvers/task-search.resolver.ts
-
+import { unauthorized } from '../../lib/errors';
+import { assertBoardPermission } from '../../lib/permissions';
+import { getBoardById } from '../../services/board.service';
 import { searchTasksByBoard } from '../../services/task-search.service';
+import { GraphQLContext } from '../context';
+import { BoardRole } from '../schema/types/board-role';
 
 export const taskSearchResolvers = {
   Query: {
@@ -25,7 +28,18 @@ export const taskSearchResolvers = {
         last?: number;
         before?: string;
       },
+      ctx: GraphQLContext,
     ) => {
+      const board = getBoardById(args.boardId);
+
+      if (board.visibility !== 'PUBLIC') {
+        if (!ctx.currentUser) {
+          unauthorized('Authentication required');
+        }
+
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+      }
+
       const { first, after, last, before, ...searchArgs } = args;
 
       return searchTasksByBoard(searchArgs, {
