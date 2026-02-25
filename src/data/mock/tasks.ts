@@ -10,6 +10,8 @@ export type TaskRecord = {
   assigneeId?: string | null;
   position: number;
   statusId?: string | null;
+  overrideStatusId?: string | null;
+  labelIds: string[];
   createdAt: Date;
   updatedAt: Date;
 };

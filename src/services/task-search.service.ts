@@ -1,5 +1,4 @@
-import { TaskRecord, tasks } from '../data/mock/tasks';
-import { columns } from '../data/mock/columns';
+import { TaskRecord, tasks, columns } from '../data/mock';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { notFound } from '../lib/errors';
 
@@ -100,8 +99,14 @@ function applySort(
         return a.title.localeCompare(b.title) * direction;
 
       case 'PRIORITY': {
-        const order = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-        return (order[a.priority] - order[b.priority]) * direction;
+        const order: Record<string, number> = {
+          HIGH: 3,
+          MEDIUM: 2,
+          LOW: 1,
+        };
+        const weight = (p?: TaskRecord['priority']) =>
+          p != null ? order[p] ?? 0 : 0;
+        return (weight(a.priority) - weight(b.priority)) * direction;
       }
 
       case 'DUE_DATE':

@@ -5,6 +5,7 @@ export type ColumnRecord = {
   position: number;
   createdAt: Date;
   updatedAt: Date;
+  statusId: string;
 };
 
 export const columns: ColumnRecord[] = [];

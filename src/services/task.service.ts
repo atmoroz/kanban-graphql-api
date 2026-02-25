@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { tasks, TaskRecord } from '../data/mock/tasks';
-import { columns } from '../data/mock/columns';
+import { tasks, TaskRecord, columns, labels, statuses } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { TaskPriority } from '../types/task';
@@ -40,8 +39,10 @@ export function createTask(input: {
     validationFailed('Task title cannot be empty');
   }
 
-  const columnExists = columns.some(c => c.id === input.columnId);
-  if (!columnExists) notFound('Column');
+  const column = columns.find(c => c.id === input.columnId);
+  if (!column) notFound('Column');
+
+  const statusId = column.statusId;
 
   const position = listTasksInColumn(input.columnId).length;
 
@@ -50,7 +51,9 @@ export function createTask(input: {
     columnId: input.columnId,
     title: input.title,
     position,
-    statusId: null,
+    statusId,
+    overrideStatusId: null,
+    labelIds: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -115,8 +118,8 @@ export function moveTask(
 ): TaskRecord {
   const task = getTaskById(id);
 
-  const targetColumnExists = columns.some(c => c.id === targetColumnId);
-  if (!targetColumnExists) notFound('Column');
+  const targetColumn = columns.find(c => c.id === targetColumnId);
+  if (!targetColumn) notFound('Column');
 
   const sourceColumnId = task.columnId;
 
@@ -161,10 +164,7 @@ export function moveTask(
 
       task.position = newPosition;
     }
-  }
-
-  // ➡️ ПЕРЕМЕЩЕНИЕ В ДРУГУЮ КОЛОНКУ
-  else {
+  } else {
     sourceTasks
       .filter(t => t.position > task.position)
       .forEach(t => t.position--);
@@ -175,8 +175,70 @@ export function moveTask(
 
     task.columnId = targetColumnId;
     task.position = newPosition;
+    if (task.overrideStatusId == null) {
+      task.statusId = targetColumn.statusId;
+    }
   }
 
   task.updatedAt = new Date();
+  return task;
+}
+
+export function updateTaskLabels(taskId: string, labelIds: string[]) {
+  const task = getTaskById(taskId);
+
+  const taskLabels = labels.filter(l => labelIds.includes(l.id));
+
+  if (taskLabels.length !== labelIds.length) {
+    validationFailed('One or more labels not found');
+  }
+
+  const boardId = taskLabels[0]?.boardId;
+  if (boardId && taskLabels.some(l => l.boardId !== boardId)) {
+    validationFailed('Labels must belong to the same board');
+  }
+
+  task.labelIds = labelIds;
+  task.updatedAt = new Date();
+
+  return task;
+}
+
+export function setTaskStatusOverride(taskId: string, statusId: string) {
+  const task = getTaskById(taskId);
+
+  const column = columns.find(c => c.id === task.columnId);
+  if (!column) {
+    throw new Error('Column not found');
+  }
+
+  const status = statuses.find(s => s.id === statusId);
+  if (!status) {
+    notFound('Status');
+  }
+
+  if (status.boardId !== column.boardId) {
+    validationFailed('Status does not belong to the same board');
+  }
+
+  task.overrideStatusId = statusId;
+  task.statusId = statusId;
+  task.updatedAt = new Date();
+
+  return task;
+}
+
+export function clearTaskStatusOverride(taskId: string) {
+  const task = getTaskById(taskId);
+
+  const column = columns.find(c => c.id === task.columnId);
+  if (!column) {
+    throw new Error('Column not found');
+  }
+
+  task.overrideStatusId = null;
+  task.statusId = column.statusId;
+  task.updatedAt = new Date();
+
   return task;
 }

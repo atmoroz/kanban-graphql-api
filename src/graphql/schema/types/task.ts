@@ -14,7 +14,9 @@ export const taskTypes = `
     dueDate: DateTime
     assigneeId: ID
     position: Int!
-    statusId: ID
+    statusId: ID!
+    overrideStatusId: ID
+    labelIds: [ID!]!
     createdAt: DateTime!
     updatedAt: DateTime!
   }

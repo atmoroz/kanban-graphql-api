@@ -1,4 +1,4 @@
-import { columns } from '../../data/mock/columns';
+import { columns } from '../../data/mock';
 import { notFound, unauthorized } from '../../lib/errors';
 import { assertBoardPermission } from '../../lib/permissions';
 import { getBoardById } from '../../services/board.service';
