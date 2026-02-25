@@ -25,5 +25,10 @@ export const taskMutations = `
       columnId: ID!
       position: Int
     ): Task!
+
+    updateTaskLabels(
+      taskId: ID!
+      labelIds: [ID!]!
+    ): Task!      
   }
 `;

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { tasks, TaskRecord, columns } from '../data/mock';
+import { tasks, TaskRecord, columns, labels } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { TaskPriority } from '../types/task';
@@ -52,6 +52,7 @@ export function createTask(input: {
     title: input.title,
     position,
     statusId,
+    labelIds: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -177,5 +178,25 @@ export function moveTask(
   }
 
   task.updatedAt = new Date();
+  return task;
+}
+
+export function updateTaskLabels(taskId: string, labelIds: string[]) {
+  const task = getTaskById(taskId);
+
+  const taskLabels = labels.filter(l => labelIds.includes(l.id));
+
+  if (taskLabels.length !== labelIds.length) {
+    validationFailed('One or more labels not found');
+  }
+
+  const boardId = taskLabels[0]?.boardId;
+  if (boardId && taskLabels.some(l => l.boardId !== boardId)) {
+    validationFailed('Labels must belong to the same board');
+  }
+
+  task.labelIds = labelIds;
+  task.updatedAt = new Date();
+
   return task;
 }

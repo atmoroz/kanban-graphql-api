@@ -10,6 +10,7 @@ import {
   updateTask,
   deleteTask,
   moveTask,
+  updateTaskLabels,
 } from '../../services/task.service';
 import { TaskPriority } from '../../types/task';
 import { GraphQLContext } from '../context';
@@ -192,6 +193,21 @@ export const taskResolvers = {
       );
 
       return moveTask(args.id, args.targetColumnId, args.position);
+    },
+    updateTaskLabels: (
+      _: unknown,
+      { taskId, labelIds }: { taskId: string; labelIds: string[] },
+      { currentUser }: any,
+    ) => {
+      const task = getTaskById(taskId);
+      const column = columns.find(c => c.id === task.columnId);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(column.boardId, currentUser, BoardRole.MEMBER);
+
+      return updateTaskLabels(taskId, labelIds);
     },
   },
 };
