@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getBoardById } from './board.service';
-import { columns, ColumnRecord } from '../data/mock/columns';
+import { columns, ColumnRecord, tasks, statuses } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
-import { tasks } from '../data/mock/tasks';
 
 export function listColumns(boardId: string): ColumnRecord[] {
   return columns
@@ -23,11 +22,22 @@ export function createColumn(boardId: string, title: string): ColumnRecord {
   const boardColumns = listColumns(boardId);
   const position = boardColumns.length;
 
+  const boardStatuses = statuses
+    .filter(s => s.boardId === boardId)
+    .sort((a, b) => a.order - b.order);
+
+  if (!boardStatuses.length) {
+    throw new Error('Board has no statuses');
+  }
+
+  const statusId = boardStatuses[0].id;
+
   const column: ColumnRecord = {
     id: randomUUID(),
     boardId,
     title,
     position,
+    statusId,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

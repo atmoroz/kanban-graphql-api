@@ -6,7 +6,7 @@ import {
   toSafeUser,
   type UserRecord,
   type SafeUser,
-} from '../data/mock/users';
+} from '../data/mock';
 import { conflict, unauthorized, notFound } from '../lib/errors';
 
 export type AuthResult = {

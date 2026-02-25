@@ -4,7 +4,7 @@ import {
   listBoardMembers,
   removeBoardMember as removeMemberRecord,
   updateBoardMemberRole as updateMemberRoleRecord,
-} from '../data/mock/board-members';
+} from '../data/mock';
 import { BoardRole } from '../graphql/schema/types/board-role';
 import { assertBoardPermission, getUserBoardRole } from '../lib/permissions';
 import { conflict, notFound, forbidden } from '../lib/errors';

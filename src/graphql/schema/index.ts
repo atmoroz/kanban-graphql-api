@@ -10,6 +10,7 @@ import { taskFilterTypes } from './types/task-filters';
 import { userTypes } from './types/user';
 import { roleTypes } from './types/roles';
 import { boardMemberTypes } from './types/board-member';
+import { statusTypes } from './types/status';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
@@ -42,6 +43,8 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     sortTypes,
     taskFilterTypes,
     healthTypeDefs,
+
+    statusTypes,
 
     boardTypes,
     boardQueries,

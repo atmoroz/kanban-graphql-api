@@ -1,39 +1,50 @@
 import { randomUUID } from 'node:crypto';
-import { boards, BoardRecord } from '../data/mock/boards';
+import {
+  boards,
+  BoardRecord,
+  columns,
+  addBoardMember,
+  isBoardMember,
+  statuses,
+} from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
-import { columns } from '../data/mock/columns';
 import { BoardRole } from '../graphql/schema/types/board-role';
-import { addBoardMember, isBoardMember } from '../data/mock/board-members';
 
 export type BoardSortBy = 'NAME' | 'CREATED_AT' | 'UPDATED_AT';
 export type SortOrder = 'ASC' | 'DESC';
+const DEFAULT_STATUSES = [
+  { name: 'Todo', order: 1, color: '#6B7280' },
+  { name: 'In Progress', order: 2, color: '#3B82F6' },
+  { name: 'Done', order: 3, color: '#10B981' },
+];
 
 export function getBoardById(id: string): BoardRecord {
   const board = boards.find(b => b.id === id);
+
   if (!board) {
     notFound('Board');
   }
   return board as unknown as BoardRecord;
 }
 
-// export function listBoards(
-//   args: PaginationArgs & {
-//     sortBy?: BoardSortBy;
-//     sortOrder?: SortOrder;
-//     visibility?: 'PUBLIC' | 'PRIVATE';
-//   },
-// ) {
-//   let result = boards;
+export function listBoards(
+  args: PaginationArgs & {
+    sortBy?: BoardSortBy;
+    sortOrder?: SortOrder;
+    visibility?: 'PUBLIC' | 'PRIVATE';
+  },
+) {
+  let result = boards;
 
-//   if (args.visibility) {
-//     result = result.filter(b => b.visibility === args.visibility);
-//   }
+  if (args.visibility) {
+    result = result.filter(b => b.visibility === args.visibility);
+  }
 
-//   result = sortBoards(result, args.sortBy, args.sortOrder);
+  result = sortBoards(result, args.sortBy, args.sortOrder);
 
-//   return paginateArray(result, args);
-// }
+  return paginateArray(result, args);
+}
 
 export function createBoard(input: {
   title: string;
@@ -53,6 +64,15 @@ export function createBoard(input: {
     board.description = input.description;
   }
   boards.push(board);
+  DEFAULT_STATUSES.forEach(status => {
+    statuses.push({
+      id: randomUUID(),
+      boardId: board.id,
+      name: status.name,
+      order: status.order,
+      color: status.color,
+    });
+  });
 
   if (input.ownerId) {
     addBoardMember({
@@ -116,12 +136,10 @@ export function sortBoards(
 }
 
 export function listBoardsForUser(userId?: string) {
-  // без auth → только PUBLIC
   if (!userId) {
     return boards.filter(b => b.visibility === 'PUBLIC');
   }
 
-  // auth → PUBLIC + PRIVATE, где пользователь участник
   return boards.filter(
     b => b.visibility === 'PUBLIC' || isBoardMember(b.id, userId),
   );

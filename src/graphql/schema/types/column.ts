@@ -4,6 +4,7 @@ export const columnTypes = `
     boardId: ID!
     title: String!
     position: Int!
+    statusId: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
   }

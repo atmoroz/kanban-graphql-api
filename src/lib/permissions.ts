@@ -1,5 +1,5 @@
 import { forbidden, unauthorized } from './errors';
-import { findBoardMember } from '../data/mock/board-members';
+import { findBoardMember } from '../data/mock';
 import { BoardRole } from '../graphql/schema/types/board-role';
 
 /* ===== Role weights ===== */

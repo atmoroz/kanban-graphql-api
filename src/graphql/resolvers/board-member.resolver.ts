@@ -6,7 +6,7 @@ import {
 } from '../../services/board-member.service';
 import { GraphQLContext } from '../context';
 import { unauthorized, notFound } from '../../lib/errors';
-import { findUserById, toSafeUser } from '../../data/mock/users';
+import { findUserById, toSafeUser } from '../../data/mock';
 
 export const boardMemberResolvers = {
   Query: {

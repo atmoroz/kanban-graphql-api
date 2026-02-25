@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { tasks, TaskRecord } from '../data/mock/tasks';
-import { columns } from '../data/mock/columns';
+import { tasks, TaskRecord, columns } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { TaskPriority } from '../types/task';
@@ -40,8 +39,10 @@ export function createTask(input: {
     validationFailed('Task title cannot be empty');
   }
 
-  const columnExists = columns.some(c => c.id === input.columnId);
-  if (!columnExists) notFound('Column');
+  const column = columns.find(c => c.id === input.columnId);
+  if (!column) notFound('Column');
+
+  const statusId = column.statusId;
 
   const position = listTasksInColumn(input.columnId).length;
 
@@ -50,7 +51,7 @@ export function createTask(input: {
     columnId: input.columnId,
     title: input.title,
     position,
-    statusId: null,
+    statusId,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -115,8 +116,8 @@ export function moveTask(
 ): TaskRecord {
   const task = getTaskById(id);
 
-  const targetColumnExists = columns.some(c => c.id === targetColumnId);
-  if (!targetColumnExists) notFound('Column');
+  const targetColumn = columns.find(c => c.id === targetColumnId);
+  if (!targetColumn) notFound('Column');
 
   const sourceColumnId = task.columnId;
 
@@ -175,6 +176,7 @@ export function moveTask(
 
     task.columnId = targetColumnId;
     task.position = newPosition;
+    task.statusId = targetColumn.statusId;
   }
 
   task.updatedAt = new Date();

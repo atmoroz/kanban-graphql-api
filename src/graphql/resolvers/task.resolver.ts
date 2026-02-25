@@ -1,5 +1,4 @@
-import { columns } from '../../data/mock/columns';
-import { tasks } from '../../data/mock/tasks';
+import { columns, tasks } from '../../data/mock';
 import { notFound, unauthorized } from '../../lib/errors';
 import { assertBoardPermission } from '../../lib/permissions';
 import { getBoardById, SortOrder } from '../../services/board.service';
