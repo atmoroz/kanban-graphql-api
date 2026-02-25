@@ -20,6 +20,8 @@ export type JwtPayload = {
   userId: string;
 };
 
+const revokedTokens = new Map<string, number | null>();
+
 /* ===== Passwords ===== */
 
 export async function hashPassword(password: string): Promise<string> {
@@ -46,8 +48,41 @@ export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, options);
 }
 
+function cleanupRevokedTokens(): void {
+  const now = Date.now();
+
+  for (const [token, expiresAt] of revokedTokens.entries()) {
+    if (expiresAt !== null && expiresAt <= now) {
+      revokedTokens.delete(token);
+    }
+  }
+}
+
+export function revokeToken(token: string): void {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (typeof decoded !== 'object' || decoded === null) {
+      unauthorized('Invalid token payload');
+    }
+
+    const expiresAt =
+      typeof decoded.exp === 'number' ? decoded.exp * 1000 : null;
+
+    revokedTokens.set(token, expiresAt);
+  } catch {
+    unauthorized('Invalid or expired token');
+  }
+}
+
 export function verifyToken(token: string): JwtPayload {
   try {
+    cleanupRevokedTokens();
+
+    if (revokedTokens.has(token)) {
+      unauthorized('Token has been revoked');
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
 
     if (typeof decoded !== 'object' || decoded === null) {

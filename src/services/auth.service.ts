@@ -1,4 +1,9 @@
-import { hashPassword, comparePassword, signToken } from '../lib/auth';
+import {
+  hashPassword,
+  comparePassword,
+  signToken,
+  revokeToken,
+} from '../lib/auth';
 import {
   findUserByEmail,
   findUserById,
@@ -69,4 +74,11 @@ export function getCurrentUser(userId: string): SafeUser {
     notFound('User');
   }
   return toSafeUser(user);
+}
+
+/* ===== Logout ===== */
+
+export function logoutUser(token: string): boolean {
+  revokeToken(token);
+  return true;
 }

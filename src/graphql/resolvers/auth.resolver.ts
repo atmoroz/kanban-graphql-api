@@ -1,4 +1,5 @@
-import { registerUser, loginUser } from '../../services/auth.service';
+import { unauthorized } from '../../lib/errors';
+import { registerUser, loginUser, logoutUser } from '../../services/auth.service';
 import { GraphQLContext } from '../context';
 
 export const authResolvers = {
@@ -28,6 +29,14 @@ export const authResolvers = {
       },
     ) => {
       return loginUser(args);
+    },
+
+    logout: (_: unknown, __: unknown, ctx: GraphQLContext) => {
+      if (!ctx.currentUser || !ctx.authToken) {
+        unauthorized('Authentication required');
+      }
+
+      return logoutUser(ctx.authToken);
     },
   },
 };
