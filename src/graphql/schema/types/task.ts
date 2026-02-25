@@ -15,6 +15,7 @@ export const taskTypes = `
     assigneeId: ID
     position: Int!
     statusId: ID!
+    overrideStatusId: ID
     labelIds: [ID!]!
     createdAt: DateTime!
     updatedAt: DateTime!

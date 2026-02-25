@@ -11,6 +11,8 @@ import {
   deleteTask,
   moveTask,
   updateTaskLabels,
+  setTaskStatusOverride,
+  clearTaskStatusOverride,
 } from '../../services/task.service';
 import { TaskPriority } from '../../types/task';
 import { GraphQLContext } from '../context';
@@ -167,7 +169,7 @@ export const taskResolvers = {
       _: unknown,
       args: {
         id: string;
-        targetColumnId: string;
+        columnId: string;
         position?: number;
       },
       ctx: GraphQLContext,
@@ -181,7 +183,7 @@ export const taskResolvers = {
         notFound('Task');
       }
 
-      const targetColumn = columns.find(c => c.id === args.targetColumnId);
+      const targetColumn = columns.find(c => c.id === args.columnId);
       if (!targetColumn) {
         notFound('Column');
       }
@@ -192,22 +194,71 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return moveTask(args.id, args.targetColumnId, args.position);
+      return moveTask(args.id, args.columnId, args.position);
     },
     updateTaskLabels: (
       _: unknown,
       { taskId, labelIds }: { taskId: string; labelIds: string[] },
-      { currentUser }: any,
+      ctx: GraphQLContext,
     ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
       const task = getTaskById(taskId);
       const column = columns.find(c => c.id === task.columnId);
       if (!column) {
         notFound('Column');
       }
 
-      assertBoardPermission(column.boardId, currentUser, BoardRole.MEMBER);
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.MEMBER,
+      );
 
       return updateTaskLabels(taskId, labelIds);
+    },
+
+    updateTaskStatus: (
+      _: unknown,
+      { taskId, statusId }: { taskId: string; statusId: string },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
+      const task = getTaskById(taskId);
+
+      const column = columns.find(c => c.id === task.columnId);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.MEMBER,
+      );
+
+      return setTaskStatusOverride(taskId, statusId);
+    },
+
+    clearTaskStatusOverride: (
+      _: unknown,
+      { taskId }: { taskId: string },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
+      const task = getTaskById(taskId);
+
+      const column = columns.find(c => c.id === task.columnId);
+      if (!column) {
+        notFound('Column');
+      }
+
+      assertBoardPermission(
+        column.boardId,
+        ctx.currentUser.id,
+        BoardRole.MEMBER,
+      );
+
+      return clearTaskStatusOverride(taskId);
     },
   },
 };

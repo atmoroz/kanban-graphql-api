@@ -4,6 +4,8 @@ import {
   getStatusById,
 } from '../../services/status.service';
 import { assertBoardPermission } from '../../lib/permissions';
+import { unauthorized } from '../../lib/errors';
+import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
 export const statusResolvers = {
@@ -11,23 +13,29 @@ export const statusResolvers = {
     boardStatuses: (
       _: unknown,
       { boardId }: { boardId: string },
-      { currentUser }: any,
+      ctx: GraphQLContext,
     ) => {
       const board = getBoardById(boardId);
 
       if (board.visibility !== 'PUBLIC') {
-        assertBoardPermission(boardId, currentUser, BoardRole.VIEWER);
+        if (!ctx.currentUser) unauthorized('Authentication required');
+        assertBoardPermission(boardId, ctx.currentUser.id, BoardRole.VIEWER);
       }
 
       return getStatusesByBoardId(boardId);
     },
 
-    statusById: (_: unknown, { id }: { id: string }, { currentUser }: any) => {
+    statusById: (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
       const status = getStatusById(id);
       const board = getBoardById(status.boardId);
 
       if (board.visibility !== 'PUBLIC') {
-        assertBoardPermission(board.id, currentUser, BoardRole.VIEWER);
+        if (!ctx.currentUser) unauthorized('Authentication required');
+        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
       }
 
       return status;

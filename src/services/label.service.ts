@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { labels, LabelRecord } from '../data/mock/labels';
+import { labels, LabelRecord } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 
 export function getLabelsByBoardId(boardId: string): LabelRecord[] {

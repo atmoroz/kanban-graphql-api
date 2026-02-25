@@ -1,5 +1,5 @@
 export const labelMutations = `
-  type Mutation {
+  extend type Mutation {
     createLabel(
       boardId: ID!
       name: String!

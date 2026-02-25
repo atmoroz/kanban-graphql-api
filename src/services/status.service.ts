@@ -1,4 +1,4 @@
-import { statuses } from '../data/mock/statuses';
+import { statuses } from '../data/mock';
 import { notFound } from '../lib/errors';
 
 export function getStatusesByBoardId(boardId: string) {

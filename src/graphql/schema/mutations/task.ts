@@ -30,5 +30,14 @@ export const taskMutations = `
       taskId: ID!
       labelIds: [ID!]!
     ): Task!      
+
+    updateTaskStatus(
+      taskId: ID!
+      statusId: ID!
+    ): Task!
+
+    clearTaskStatusOverride(
+      taskId: ID!
+    ): Task!
   }
 `;

@@ -7,6 +7,8 @@ import {
   deleteLabel,
 } from '../../services/label.service';
 import { assertBoardPermission } from '../../lib/permissions';
+import { unauthorized } from '../../lib/errors';
+import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
 export const labelResolvers = {
@@ -14,12 +16,13 @@ export const labelResolvers = {
     boardLabels: (
       _: unknown,
       { boardId }: { boardId: string },
-      { currentUser }: any,
+      ctx: GraphQLContext,
     ) => {
       const board = getBoardById(boardId);
 
       if (board.visibility !== 'PUBLIC') {
-        assertBoardPermission(boardId, currentUser, BoardRole.VIEWER);
+        if (!ctx.currentUser) unauthorized('Authentication required');
+        assertBoardPermission(boardId, ctx.currentUser.id, BoardRole.VIEWER);
       }
 
       return getLabelsByBoardId(boardId);
@@ -30,10 +33,11 @@ export const labelResolvers = {
     createLabel: (
       _: unknown,
       input: { boardId: string; name: string; color?: string },
-      { currentUser }: any,
+      ctx: GraphQLContext,
     ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
       const board = getBoardById(input.boardId);
-      assertBoardPermission(board.id, currentUser, BoardRole.ADMIN);
+      assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.ADMIN);
 
       return createLabel(input);
     },
@@ -41,17 +45,23 @@ export const labelResolvers = {
     updateLabel: (
       _: unknown,
       { id, ...input }: { id: string; name?: string; color?: string },
-      { currentUser }: any,
+      ctx: GraphQLContext,
     ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
       const label = getLabelById(id);
-      assertBoardPermission(label.boardId, currentUser, BoardRole.ADMIN);
+      assertBoardPermission(label.boardId, ctx.currentUser.id, BoardRole.ADMIN);
 
       return updateLabel(id, input);
     },
 
-    deleteLabel: (_: unknown, { id }: { id: string }, { currentUser }: any) => {
+    deleteLabel: (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
+      if (!ctx.currentUser) unauthorized('Authentication required');
       const label = getLabelById(id);
-      assertBoardPermission(label.boardId, currentUser, BoardRole.ADMIN);
+      assertBoardPermission(label.boardId, ctx.currentUser.id, BoardRole.ADMIN);
 
       return deleteLabel(id);
     },
