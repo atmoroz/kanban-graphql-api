@@ -4,6 +4,7 @@ import { getCurrentUser } from '../services/auth.service';
 export type GraphQLContext = {
   request: Request;
   currentUser: ReturnType<typeof getCurrentUser> | null;
+  authToken: string | null;
 };
 
 export function createContext({
@@ -17,6 +18,7 @@ export function createContext({
     return {
       request,
       currentUser: null,
+      authToken: null,
     };
   }
 
@@ -29,11 +31,13 @@ export function createContext({
     return {
       request,
       currentUser: user,
+      authToken: token,
     };
   } catch {
     return {
       request,
       currentUser: null,
+      authToken: null,
     };
   }
 }
