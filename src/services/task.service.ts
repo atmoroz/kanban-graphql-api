@@ -162,10 +162,7 @@ export function moveTask(
 
       task.position = newPosition;
     }
-  }
-
-  // ➡️ ПЕРЕМЕЩЕНИЕ В ДРУГУЮ КОЛОНКУ
-  else {
+  } else {
     sourceTasks
       .filter(t => t.position > task.position)
       .forEach(t => t.position--);

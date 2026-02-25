@@ -19,6 +19,7 @@ import { healthResolvers, healthTypeDefs } from './queries/health';
 import { tasksByBoardQuery } from './queries/tasks-by-board';
 import { authQueries } from './queries/auth';
 import { boardMemberQueries } from './queries/board-members';
+import { statusQueries } from './queries/status';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
@@ -35,6 +36,7 @@ import { taskSearchResolvers } from '../resolvers/task-search.resolver';
 import { authResolvers } from '../resolvers/auth.resolver';
 import { GraphQLContext } from '../context';
 import { boardMemberResolvers } from '../resolvers/board-member.resolver';
+import { statusResolvers } from '../resolvers/status.resolver';
 
 export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
@@ -43,8 +45,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     sortTypes,
     taskFilterTypes,
     healthTypeDefs,
-
-    statusTypes,
 
     boardTypes,
     boardQueries,
@@ -69,6 +69,9 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     boardMemberTypes,
     boardMemberQueries,
     boardMemberMutations,
+
+    statusTypes,
+    statusQueries,
   ],
   resolvers: [
     {
@@ -81,5 +84,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     taskSearchResolvers,
     authResolvers,
     boardMemberResolvers,
+    statusResolvers,
   ],
 });
