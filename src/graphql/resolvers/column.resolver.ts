@@ -10,6 +10,7 @@ import {
   moveColumn,
 } from '../../services/column.service';
 import { logActivity } from '../../services/activity.service';
+import { realtimePubSub } from '../../lib/pubsub';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
@@ -162,6 +163,9 @@ export const columnResolvers = {
         action: 'MOVE',
         diff: `newPosition:${args.newPosition}`,
       });
+
+      const movedColumn = movedColumns.find(c => c.id === column.id) ?? column;
+      realtimePubSub.publish('COLUMN_MOVED', column.boardId, movedColumn);
 
       return movedColumns;
     },
