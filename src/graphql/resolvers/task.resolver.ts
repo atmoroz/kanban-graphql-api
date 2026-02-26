@@ -14,6 +14,7 @@ import {
   setTaskStatusOverride,
   clearTaskStatusOverride,
 } from '../../services/task.service';
+import { logActivity } from '../../services/activity.service';
 import { TaskPriority } from '../../types/task';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
@@ -102,7 +103,17 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return createTask(args);
+      const created = createTask(args);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: created.id,
+        action: 'CREATE',
+      });
+
+      return created;
     },
     updateTask: (
       _: unknown,
@@ -137,7 +148,17 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return updateTask(args.id, args);
+      const updated = updateTask(args.id, args);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: updated.id,
+        action: 'UPDATE',
+      });
+
+      return updated;
     },
 
     deleteTask: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
@@ -162,6 +183,15 @@ export const taskResolvers = {
       );
 
       deleteTask(id);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: id,
+        action: 'DELETE',
+      });
+
       return true;
     },
 
@@ -194,7 +224,21 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return moveTask(args.id, args.columnId, args.position);
+      const moved = moveTask(args.id, args.columnId, args.position);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: targetColumn.boardId,
+        entityType: 'TASK',
+        entityId: moved.id,
+        action: 'MOVE',
+        diff:
+          args.position !== undefined
+            ? `columnId:${args.columnId};position:${args.position}`
+            : `columnId:${args.columnId}`,
+      });
+
+      return moved;
     },
     updateTaskLabels: (
       _: unknown,
@@ -214,7 +258,18 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return updateTaskLabels(taskId, labelIds);
+      const updated = updateTaskLabels(taskId, labelIds);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: updated.id,
+        action: 'UPDATE',
+        diff: 'labels updated',
+      });
+
+      return updated;
     },
 
     updateTaskStatus: (
@@ -236,7 +291,18 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return setTaskStatusOverride(taskId, statusId);
+      const updated = setTaskStatusOverride(taskId, statusId);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: updated.id,
+        action: 'UPDATE',
+        diff: `statusId:${statusId}`,
+      });
+
+      return updated;
     },
 
     clearTaskStatusOverride: (
@@ -258,7 +324,18 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      return clearTaskStatusOverride(taskId);
+      const updated = clearTaskStatusOverride(taskId);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'TASK',
+        entityId: updated.id,
+        action: 'UPDATE',
+        diff: 'status override cleared',
+      });
+
+      return updated;
     },
   },
 };

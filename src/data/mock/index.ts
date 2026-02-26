@@ -5,3 +5,4 @@ export * from './statuses';
 export * from './board-members';
 export * from './users';
 export * from './labels';
+export * from './activities';

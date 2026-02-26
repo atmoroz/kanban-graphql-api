@@ -10,6 +10,7 @@ import {
   sortBoards,
   BoardSortBy,
 } from '../../services/board.service';
+import { logActivity } from '../../services/activity.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
@@ -67,10 +68,20 @@ export const boardResolvers = {
         unauthorized('Authentication required');
       }
 
-      return createBoard({
+      const board = createBoard({
         ...args,
         ownerId: ctx.currentUser.id,
       });
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: board.id,
+        entityType: 'BOARD',
+        entityId: board.id,
+        action: 'CREATE',
+      });
+
+      return board;
     },
 
     updateBoard: (
@@ -89,7 +100,17 @@ export const boardResolvers = {
 
       assertBoardPermission(args.id, ctx.currentUser.id, BoardRole.ADMIN);
 
-      return updateBoard(args.id, args);
+      const board = updateBoard(args.id, args);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: board.id,
+        entityType: 'BOARD',
+        entityId: board.id,
+        action: 'UPDATE',
+      });
+
+      return board;
     },
 
     deleteBoard: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
@@ -100,6 +121,15 @@ export const boardResolvers = {
       assertBoardPermission(id, ctx.currentUser.id, BoardRole.OWNER);
 
       deleteBoard(id);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: id,
+        entityType: 'BOARD',
+        entityId: id,
+        action: 'DELETE',
+      });
+
       return true;
     },
   },
