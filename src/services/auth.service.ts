@@ -13,6 +13,7 @@ import {
   type SafeUser,
 } from '../data/mock';
 import { conflict, unauthorized, notFound } from '../lib/errors';
+import { acceptPendingInvitesForUser } from './pending-invite.service';
 
 export type AuthResult = {
   user: SafeUser;
@@ -40,6 +41,10 @@ export async function registerUser(input: {
   });
 
   const token = signToken({ userId: user.id });
+  acceptPendingInvitesForUser({
+    userId: user.id,
+    email: user.email,
+  });
 
   return { user: toSafeUser(user), token };
 }
@@ -62,6 +67,10 @@ export async function loginUser(input: {
   }
 
   const token = signToken({ userId: user.id });
+  acceptPendingInvitesForUser({
+    userId: user.id,
+    email: user.email,
+  });
 
   return { user: toSafeUser(user), token };
 }
