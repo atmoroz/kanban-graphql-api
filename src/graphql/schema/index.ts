@@ -24,6 +24,8 @@ import { boardMemberQueries } from './queries/board-members';
 import { statusQueries } from './queries/status';
 import { labelQueries } from './queries/label';
 import { activityQueries } from './queries/activity';
+import { subscriptionTypeDefs } from './subscriptions';
+import { realtimeSubscriptions } from './subscriptions/realtime';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
@@ -44,6 +46,7 @@ import { boardMemberResolvers } from '../resolvers/board-member.resolver';
 import { statusResolvers } from '../resolvers/status.resolver';
 import { labelResolvers } from '../resolvers/label.resolver';
 import { activityResolvers } from '../resolvers/activity.resolver';
+import { realtimeResolvers } from '../resolvers/realtime.resolver';
 
 export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
@@ -52,6 +55,7 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     sortTypes,
     taskFilterTypes,
     healthTypeDefs,
+    subscriptionTypeDefs,
 
     boardTypes,
     boardQueries,
@@ -85,6 +89,7 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     labelQueries,
     labelMutations,
     activityQueries,
+    realtimeSubscriptions,
   ],
   resolvers: [
     {
@@ -100,5 +105,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     statusResolvers,
     labelResolvers,
     activityResolvers,
+    realtimeResolvers,
   ],
 });

@@ -15,6 +15,7 @@ import {
   clearTaskStatusOverride,
 } from '../../services/task.service';
 import { logActivity } from '../../services/activity.service';
+import { realtimePubSub } from '../../lib/pubsub';
 import { TaskPriority } from '../../types/task';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
@@ -113,6 +114,8 @@ export const taskResolvers = {
         action: 'CREATE',
       });
 
+      realtimePubSub.publish('TASK_CREATED', column.boardId, created);
+
       return created;
     },
     updateTask: (
@@ -157,6 +160,8 @@ export const taskResolvers = {
         entityId: updated.id,
         action: 'UPDATE',
       });
+
+      realtimePubSub.publish('TASK_UPDATED', column.boardId, updated);
 
       return updated;
     },
@@ -238,6 +243,8 @@ export const taskResolvers = {
             : `columnId:${args.columnId}`,
       });
 
+      realtimePubSub.publish('TASK_UPDATED', targetColumn.boardId, moved);
+
       return moved;
     },
     updateTaskLabels: (
@@ -268,6 +275,8 @@ export const taskResolvers = {
         action: 'UPDATE',
         diff: 'labels updated',
       });
+
+      realtimePubSub.publish('TASK_UPDATED', column.boardId, updated);
 
       return updated;
     },
@@ -302,6 +311,8 @@ export const taskResolvers = {
         diff: `statusId:${statusId}`,
       });
 
+      realtimePubSub.publish('TASK_UPDATED', column.boardId, updated);
+
       return updated;
     },
 
@@ -334,6 +345,8 @@ export const taskResolvers = {
         action: 'UPDATE',
         diff: 'status override cleared',
       });
+
+      realtimePubSub.publish('TASK_UPDATED', column.boardId, updated);
 
       return updated;
     },
