@@ -12,6 +12,7 @@ import { roleTypes } from './types/roles';
 import { boardMemberTypes } from './types/board-member';
 import { statusTypes } from './types/status';
 import { labelTypes } from './types/label';
+import { activityTypes } from './types/activity';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
@@ -22,6 +23,7 @@ import { authQueries } from './queries/auth';
 import { boardMemberQueries } from './queries/board-members';
 import { statusQueries } from './queries/status';
 import { labelQueries } from './queries/label';
+import { activityQueries } from './queries/activity';
 
 import { boardMutations } from './mutations/board';
 import { columnMutations } from './mutations/column';
@@ -41,6 +43,7 @@ import { GraphQLContext } from '../context';
 import { boardMemberResolvers } from '../resolvers/board-member.resolver';
 import { statusResolvers } from '../resolvers/status.resolver';
 import { labelResolvers } from '../resolvers/label.resolver';
+import { activityResolvers } from '../resolvers/activity.resolver';
 
 export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
@@ -78,8 +81,10 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     statusQueries,
 
     labelTypes,
+    activityTypes,
     labelQueries,
     labelMutations,
+    activityQueries,
   ],
   resolvers: [
     {
@@ -94,5 +99,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     boardMemberResolvers,
     statusResolvers,
     labelResolvers,
+    activityResolvers,
   ],
 });

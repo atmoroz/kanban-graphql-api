@@ -9,6 +9,7 @@ import {
   deleteColumn,
   moveColumn,
 } from '../../services/column.service';
+import { logActivity } from '../../services/activity.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
@@ -49,7 +50,17 @@ export const columnResolvers = {
 
       assertBoardPermission(args.boardId, ctx.currentUser.id, BoardRole.ADMIN);
 
-      return createColumn(args.boardId, args.title);
+      const column = createColumn(args.boardId, args.title);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'COLUMN',
+        entityId: column.id,
+        action: 'CREATE',
+      });
+
+      return column;
     },
 
     updateColumn: (
@@ -76,7 +87,17 @@ export const columnResolvers = {
         BoardRole.ADMIN,
       );
 
-      return updateColumn(args.id, args.title ?? '');
+      const updated = updateColumn(args.id, args.title ?? '');
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: updated.boardId,
+        entityType: 'COLUMN',
+        entityId: updated.id,
+        action: 'UPDATE',
+      });
+
+      return updated;
     },
 
     deleteColumn: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
@@ -96,6 +117,15 @@ export const columnResolvers = {
       );
 
       deleteColumn(id);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'COLUMN',
+        entityId: column.id,
+        action: 'DELETE',
+      });
+
       return true;
     },
 
@@ -122,7 +152,18 @@ export const columnResolvers = {
         BoardRole.ADMIN,
       );
 
-      return moveColumn(args.id, args.newPosition);
+      const movedColumns = moveColumn(args.id, args.newPosition);
+
+      logActivity({
+        actorId: ctx.currentUser.id,
+        boardId: column.boardId,
+        entityType: 'COLUMN',
+        entityId: column.id,
+        action: 'MOVE',
+        diff: `newPosition:${args.newPosition}`,
+      });
+
+      return movedColumns;
     },
   },
 };
