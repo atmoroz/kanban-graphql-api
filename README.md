@@ -13,3 +13,11 @@ Production-grade GraphQL API for a Kanban board with pagination, RBAC, optimisti
 - All mutations require auth.
 - Anonymous users can read all `PUBLIC` boards and related public data.
 - `PRIVATE` boards require `Authorization: Bearer <token>` and board membership.
+
+## Email provider (EPIC-10)
+
+- `EMAIL_PROVIDER` (optional): `stub` | `resend` | `brevo`. Default: `stub`.
+- `EMAIL_FROM` (optional): sender email address for real providers.
+- `RESEND_API_KEY` (optional): required only for `EMAIL_PROVIDER=resend`.
+- `BREVO_API_KEY` (optional): required only for `EMAIL_PROVIDER=brevo`.
+- If provider keys are missing, service falls back to `stub` (no real sending).

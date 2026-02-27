@@ -13,6 +13,7 @@ import { boardMemberTypes } from './types/board-member';
 import { statusTypes } from './types/status';
 import { labelTypes } from './types/label';
 import { activityTypes } from './types/activity';
+import { pendingInviteTypes } from './types/pending-invite';
 
 import { boardQueries } from './queries/boards';
 import { columnQueries } from './queries/columns';
@@ -24,6 +25,7 @@ import { boardMemberQueries } from './queries/board-members';
 import { statusQueries } from './queries/status';
 import { labelQueries } from './queries/label';
 import { activityQueries } from './queries/activity';
+import { pendingInviteQueries } from './queries/pending-invites';
 import { subscriptionTypeDefs } from './subscriptions';
 import { realtimeSubscriptions } from './subscriptions/realtime';
 
@@ -34,6 +36,7 @@ import { mutationTypeDefs } from './mutations';
 import { authMutations } from './mutations/auth';
 import { boardMemberMutations } from './mutations/board-members';
 import { labelMutations } from './mutations/label';
+import { pendingInviteMutations } from './mutations/pending-invites';
 
 import { dateTimeResolver } from '../resolvers/scalars';
 import { boardResolvers } from '../resolvers/board.resolver';
@@ -47,6 +50,7 @@ import { statusResolvers } from '../resolvers/status.resolver';
 import { labelResolvers } from '../resolvers/label.resolver';
 import { activityResolvers } from '../resolvers/activity.resolver';
 import { realtimeResolvers } from '../resolvers/realtime.resolver';
+import { pendingInviteResolvers } from '../resolvers/pending-invite.resolver';
 
 export const schema = makeExecutableSchema<GraphQLContext>({
   typeDefs: [
@@ -86,9 +90,12 @@ export const schema = makeExecutableSchema<GraphQLContext>({
 
     labelTypes,
     activityTypes,
+    pendingInviteTypes,
     labelQueries,
     labelMutations,
     activityQueries,
+    pendingInviteQueries,
+    pendingInviteMutations,
     realtimeSubscriptions,
   ],
   resolvers: [
@@ -106,5 +113,6 @@ export const schema = makeExecutableSchema<GraphQLContext>({
     labelResolvers,
     activityResolvers,
     realtimeResolvers,
+    pendingInviteResolvers,
   ],
 });

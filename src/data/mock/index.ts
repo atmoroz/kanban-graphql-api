@@ -6,3 +6,4 @@ export * from './board-members';
 export * from './users';
 export * from './labels';
 export * from './activities';
+export * from './pending-invites';
