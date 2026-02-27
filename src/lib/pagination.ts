@@ -23,7 +23,21 @@ export function encodeCursor(value: string | number): string {
 
 export function decodeCursor(cursor: string): string {
   try {
-    return Buffer.from(cursor, 'base64').toString('utf-8');
+    if (!/^[A-Za-z0-9+/=]+$/.test(cursor)) {
+      validationFailed('Invalid cursor');
+    }
+
+    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+    const normalizedInput = cursor.replace(/=+$/, '');
+    const normalizedRoundtrip = Buffer.from(decoded, 'utf-8')
+      .toString('base64')
+      .replace(/=+$/, '');
+
+    if (!decoded || normalizedInput !== normalizedRoundtrip) {
+      validationFailed('Invalid cursor');
+    }
+
+    return decoded;
   } catch {
     validationFailed('Invalid cursor');
   }
@@ -48,6 +62,22 @@ export function paginateArray<T extends { id: string }>(
 
   if (after && before) {
     validationFailed('Cannot use after and before together');
+  }
+
+  if (first !== undefined && first < 0) {
+    validationFailed('first must be a non-negative integer');
+  }
+
+  if (last !== undefined && last < 0) {
+    validationFailed('last must be a non-negative integer');
+  }
+
+  if (first !== undefined && first > 100) {
+    validationFailed('first cannot exceed 100');
+  }
+
+  if (last !== undefined && last > 100) {
+    validationFailed('last cannot exceed 100');
   }
 
   let start = 0;
