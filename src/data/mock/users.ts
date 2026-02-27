@@ -42,3 +42,33 @@ export function createUser(data: {
   users.push(user);
   return user;
 }
+
+export function upsertMockUser(data: {
+  id: string;
+  email: string;
+  name?: string | null;
+  createdAt: Date;
+  passwordHash?: string;
+}): UserRecord {
+  const existing = findUserById(data.id);
+  if (existing) {
+    existing.email = data.email.toLowerCase();
+    existing.name = data.name ?? undefined;
+    existing.createdAt = data.createdAt;
+    if (data.passwordHash) {
+      existing.passwordHash = data.passwordHash;
+    }
+    return existing;
+  }
+
+  const user: UserRecord = {
+    id: data.id,
+    email: data.email.toLowerCase(),
+    name: data.name ?? undefined,
+    createdAt: data.createdAt,
+    passwordHash: data.passwordHash ?? '__external__',
+  };
+
+  users.push(user);
+  return user;
+}
