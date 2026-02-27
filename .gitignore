@@ -6,3 +6,5 @@ dist
 coverage
 .vscode
 docs
+/src/generated/prisma
+prisma/migrations
