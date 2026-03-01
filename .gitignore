@@ -9,3 +9,6 @@ coverage
 docs
 /src/generated/prisma
 prisma/migrations
+# AI / Codex / Agents
+.agents/
+.codex/
