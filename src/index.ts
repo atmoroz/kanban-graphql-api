@@ -12,7 +12,7 @@ const yoga = createYoga({
 
 const server = createServer(yoga);
 
-const PORT = 4001;
+const PORT = Number(process.env.PORT ?? 4001);
 
 server.listen(PORT, () => {
   console.log(`🚀 GraphQL Yoga running at http://localhost:${PORT}/graphql`);
