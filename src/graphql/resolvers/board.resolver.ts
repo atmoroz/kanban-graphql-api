@@ -1,12 +1,12 @@
 import { unauthorized } from '../../lib/errors';
 import { paginateArray } from '../../lib/pagination';
-import { assertBoardPermission } from '../../lib/permissions';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
 import {
-  getBoardById,
-  listBoardsForUser,
-  createBoard,
-  updateBoard,
-  deleteBoard,
+  getBoardByIdPersisted,
+  listBoardsForUserPersisted,
+  createBoardPersisted,
+  updateBoardPersisted,
+  deleteBoardPersisted,
   sortBoards,
   BoardSortBy,
 } from '../../services/board.service';
@@ -16,21 +16,29 @@ import { BoardRole } from '../schema/types/board-role';
 
 export const boardResolvers = {
   Query: {
-    board: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
-      const board = getBoardById(id);
+    board: async (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
+      const board = await getBoardByIdPersisted(id);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) {
           unauthorized('Authentication required');
         }
 
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
       return board;
     },
 
-    boards: (
+    boards: async (
       _: unknown,
       args: {
         first?: number;
@@ -42,7 +50,7 @@ export const boardResolvers = {
       },
       ctx: GraphQLContext,
     ) => {
-      const filtered = listBoardsForUser(ctx.currentUser?.id);
+      const filtered = await listBoardsForUserPersisted(ctx.currentUser?.id);
 
       const sorted = sortBoards(
         filtered,
@@ -55,7 +63,7 @@ export const boardResolvers = {
   },
 
   Mutation: {
-    createBoard: (
+    createBoard: async (
       _: unknown,
       args: {
         title: string;
@@ -68,7 +76,7 @@ export const boardResolvers = {
         unauthorized('Authentication required');
       }
 
-      const board = createBoard({
+      const board = await createBoardPersisted({
         ...args,
         ownerId: ctx.currentUser.id,
       });
@@ -84,7 +92,7 @@ export const boardResolvers = {
       return board;
     },
 
-    updateBoard: (
+    updateBoard: async (
       _: unknown,
       args: {
         id: string;
@@ -98,9 +106,9 @@ export const boardResolvers = {
         unauthorized('Authentication required');
       }
 
-      assertBoardPermission(args.id, ctx.currentUser.id, BoardRole.ADMIN);
+      await assertBoardPermissionDb(args.id, ctx.currentUser.id, BoardRole.ADMIN);
 
-      const board = updateBoard(args.id, args);
+      const board = await updateBoardPersisted(args.id, args);
 
       logActivity({
         actorId: ctx.currentUser.id,
@@ -113,14 +121,18 @@ export const boardResolvers = {
       return board;
     },
 
-    deleteBoard: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+    deleteBoard: async (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
       if (!ctx.currentUser) {
         unauthorized('Authentication required');
       }
 
-      assertBoardPermission(id, ctx.currentUser.id, BoardRole.OWNER);
+      await assertBoardPermissionDb(id, ctx.currentUser.id, BoardRole.OWNER);
 
-      deleteBoard(id);
+      await deleteBoardPersisted(id);
 
       logActivity({
         actorId: ctx.currentUser.id,

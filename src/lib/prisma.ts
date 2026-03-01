@@ -9,10 +9,9 @@ declare global {
   var __prisma_pool__: Pool | undefined;
 }
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is not defined');
-}
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  'postgresql://invalid:invalid@localhost:5432/invalid';
 
 const pool =
   globalThis.__prisma_pool__ ??

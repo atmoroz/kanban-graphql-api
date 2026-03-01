@@ -6,18 +6,18 @@ import {
 } from '../../services/board-member.service';
 import { GraphQLContext } from '../context';
 import { unauthorized, notFound } from '../../lib/errors';
-import { findUserById, toSafeUser } from '../../data/mock';
+import { prisma } from '../../lib/prisma';
 
 export const boardMemberResolvers = {
   Query: {
-    boardMembers: (
+    boardMembers: async (
       _: unknown,
       { boardId }: { boardId: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
 
-      return getBoardMembers({
+      return await getBoardMembers({
         boardId,
         actorUserId: ctx.currentUser.id,
       });
@@ -25,14 +25,14 @@ export const boardMemberResolvers = {
   },
 
   Mutation: {
-    inviteBoardMember: (
+    inviteBoardMember: async (
       _: unknown,
       { boardId, userId, role }: any,
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
 
-      return inviteBoardMember({
+      return await inviteBoardMember({
         boardId,
         actorUserId: ctx.currentUser.id,
         userId,
@@ -40,14 +40,14 @@ export const boardMemberResolvers = {
       });
     },
 
-    updateBoardMemberRole: (
+    updateBoardMemberRole: async (
       _: unknown,
       { boardId, userId, role }: any,
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
 
-      return updateBoardMemberRole({
+      return await updateBoardMemberRole({
         boardId,
         actorUserId: ctx.currentUser.id,
         userId,
@@ -55,14 +55,14 @@ export const boardMemberResolvers = {
       });
     },
 
-    removeBoardMember: (
+    removeBoardMember: async (
       _: unknown,
       { boardId, userId }: any,
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
 
-      return removeBoardMember({
+      return await removeBoardMember({
         boardId,
         actorUserId: ctx.currentUser.id,
         userId,
@@ -71,10 +71,19 @@ export const boardMemberResolvers = {
   },
 
   BoardMember: {
-    user: (parent: { userId: string }) => {
-      const user = findUserById(parent.userId);
+    user: async (parent: { userId: string }) => {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: parent.userId,
+        },
+      });
       if (!user) notFound('User');
-      return toSafeUser(user);
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name ?? undefined,
+        createdAt: user.createdAt,
+      };
     },
   },
 };

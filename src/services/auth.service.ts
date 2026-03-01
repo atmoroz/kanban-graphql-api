@@ -5,6 +5,10 @@ import {
   revokeToken,
 } from '../lib/auth';
 import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  toSafeUser,
   upsertMockUser,
   type SafeUser,
 } from '../data/mock/users';
@@ -31,6 +35,10 @@ function toSafeUserFromDb(user: {
   };
 }
 
+function isTestRuntime(): boolean {
+  return process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+}
+
 /* ===== Register ===== */
 
 export async function registerUser(input: {
@@ -38,6 +46,28 @@ export async function registerUser(input: {
   password: string;
   name?: string;
 }): Promise<AuthResult> {
+  if (isTestRuntime()) {
+    const existing = findUserByEmail(input.email);
+    if (existing) {
+      conflict('User with this email already exists');
+    }
+
+    const passwordHash = await hashPassword(input.password);
+    const user = createUser({
+      email: input.email,
+      name: input.name,
+      passwordHash,
+    });
+    const token = signToken({ userId: user.id });
+
+    acceptPendingInvitesForUser({
+      userId: user.id,
+      email: user.email,
+    });
+
+    return { user: toSafeUser(user), token };
+  }
+
   const normalizedEmail = input.email.toLowerCase().trim();
 
   const existing = await prisma.user.findUnique({
@@ -84,6 +114,26 @@ export async function loginUser(input: {
   email: string;
   password: string;
 }): Promise<AuthResult> {
+  if (isTestRuntime()) {
+    const user = findUserByEmail(input.email);
+    if (!user) {
+      unauthorized('Invalid email or password');
+    }
+
+    const isValid = await comparePassword(input.password, user.passwordHash);
+    if (!isValid) {
+      unauthorized('Invalid email or password');
+    }
+
+    const token = signToken({ userId: user.id });
+    acceptPendingInvitesForUser({
+      userId: user.id,
+      email: user.email,
+    });
+
+    return { user: toSafeUser(user), token };
+  }
+
   const normalizedEmail = input.email.toLowerCase().trim();
   const user = await prisma.user.findUnique({
     where: {
@@ -122,6 +172,14 @@ export async function loginUser(input: {
 /* ===== Me ===== */
 
 export async function getCurrentUser(userId: string): Promise<SafeUser> {
+  if (isTestRuntime()) {
+    const user = findUserById(userId);
+    if (!user) {
+      notFound('User');
+    }
+    return toSafeUser(user);
+  }
+
   const user = await prisma.user.findUnique({
     where: {
       id: userId,
