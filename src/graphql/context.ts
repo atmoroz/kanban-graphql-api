@@ -1,17 +1,19 @@
 import { verifyToken } from '../lib/auth';
 import { getCurrentUser } from '../services/auth.service';
 
+type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
+
 export type GraphQLContext = {
   request: Request;
-  currentUser: ReturnType<typeof getCurrentUser> | null;
+  currentUser: CurrentUser | null;
   authToken: string | null;
 };
 
-export function createContext({
+export async function createContext({
   request,
 }: {
   request: Request;
-}): GraphQLContext {
+}): Promise<GraphQLContext> {
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,7 +28,7 @@ export function createContext({
 
   try {
     const payload = verifyToken(token);
-    const user = getCurrentUser(payload.userId);
+    const user = await getCurrentUser(payload.userId);
 
     return {
       request,

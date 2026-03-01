@@ -6,7 +6,7 @@ import { createTask } from '../../services/task.service';
 import { listBoardActivities, listTaskActivities, logActivity } from '../../services/activity.service';
 
 describe('activity service', () => {
-  it('logs activity and returns by board', () => {
+  it('logs activity and returns by board', async () => {
     const owner = createUser({
       email: 'owner-activity@test.dev',
       passwordHash: 'hash',
@@ -18,7 +18,7 @@ describe('activity service', () => {
       ownerId: owner.id,
     });
 
-    const record = logActivity({
+    const record = await logActivity({
       actorId: owner.id,
       boardId: board.id,
       entityType: 'BOARD',
@@ -29,12 +29,12 @@ describe('activity service', () => {
     expect(record.id).toBeTruthy();
     expect(activities).toHaveLength(1);
 
-    const paged = listBoardActivities(board.id, { first: 10 });
+    const paged = await listBoardActivities(board.id, { first: 10 });
     expect(paged.edges).toHaveLength(1);
     expect(paged.edges[0]?.node.entityType).toBe('BOARD');
   });
 
-  it('filters task activities by task id', () => {
+  it('filters task activities by task id', async () => {
     const owner = createUser({
       email: 'owner-task-activity@test.dev',
       passwordHash: 'hash',
@@ -52,14 +52,14 @@ describe('activity service', () => {
       priority: 'HIGH',
     });
 
-    logActivity({
+    await logActivity({
       actorId: owner.id,
       boardId: board.id,
       entityType: 'TASK',
       entityId: task.id,
       action: 'UPDATE',
     });
-    logActivity({
+    await logActivity({
       actorId: owner.id,
       boardId: board.id,
       entityType: 'TASK',
@@ -67,9 +67,8 @@ describe('activity service', () => {
       action: 'UPDATE',
     });
 
-    const paged = listTaskActivities(task.id, { first: 10 });
+    const paged = await listTaskActivities(task.id, { first: 10 });
     expect(paged.edges).toHaveLength(1);
     expect(paged.edges[0]?.node.entityId).toBe(task.id);
   });
 });
-

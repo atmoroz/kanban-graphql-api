@@ -1,13 +1,13 @@
-import { columns } from '../../data/mock';
-import { notFound, unauthorized } from '../../lib/errors';
-import { assertBoardPermission } from '../../lib/permissions';
-import { getBoardById } from '../../services/board.service';
+import { unauthorized } from '../../lib/errors';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
+import { getBoardByIdPersisted } from '../../services/board.service';
 import {
-  listColumns,
-  createColumn,
-  updateColumn,
-  deleteColumn,
-  moveColumn,
+  listColumnsPersisted,
+  createColumnPersisted,
+  updateColumnPersisted,
+  deleteColumnPersisted,
+  moveColumnPersisted,
+  getColumnByIdPersisted,
 } from '../../services/column.service';
 import { logActivity } from '../../services/activity.service';
 import { realtimePubSub } from '../../lib/pubsub';
@@ -16,27 +16,31 @@ import { BoardRole } from '../schema/types/board-role';
 
 export const columnResolvers = {
   Query: {
-    columns: (
+    columns: async (
       _: unknown,
       { boardId }: { boardId: string },
       ctx: GraphQLContext,
     ) => {
-      const board = getBoardById(boardId);
+      const board = await getBoardByIdPersisted(boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) {
           unauthorized('Authentication required');
         }
 
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
-      return listColumns(boardId);
+      return listColumnsPersisted(boardId);
     },
   },
 
   Mutation: {
-    createColumn: (
+    createColumn: async (
       _: unknown,
       args: {
         boardId: string;
@@ -49,11 +53,15 @@ export const columnResolvers = {
         unauthorized('Authentication required');
       }
 
-      assertBoardPermission(args.boardId, ctx.currentUser.id, BoardRole.ADMIN);
+      await assertBoardPermissionDb(
+        args.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
 
-      const column = createColumn(args.boardId, args.title);
+      const column = await createColumnPersisted(args.boardId, args.title);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',
@@ -64,7 +72,7 @@ export const columnResolvers = {
       return column;
     },
 
-    updateColumn: (
+    updateColumn: async (
       _: unknown,
       args: {
         id: string;
@@ -77,20 +85,17 @@ export const columnResolvers = {
         unauthorized('Authentication required');
       }
 
-      const column = columns.find(c => c.id === args.id);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(args.id);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.ADMIN,
       );
 
-      const updated = updateColumn(args.id, args.title ?? '');
+      const updated = await updateColumnPersisted(args.id, args.title ?? '');
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: updated.boardId,
         entityType: 'COLUMN',
@@ -101,25 +106,26 @@ export const columnResolvers = {
       return updated;
     },
 
-    deleteColumn: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+    deleteColumn: async (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
       if (!ctx.currentUser) {
         unauthorized('Authentication required');
       }
 
-      const column = columns.find(c => c.id === id);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(id);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.ADMIN,
       );
 
-      deleteColumn(id);
+      await deleteColumnPersisted(id);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',
@@ -130,7 +136,7 @@ export const columnResolvers = {
       return true;
     },
 
-    moveColumn: (
+    moveColumn: async (
       _: unknown,
       args: {
         id: string;
@@ -142,20 +148,17 @@ export const columnResolvers = {
         unauthorized('Authentication required');
       }
 
-      const column = columns.find(c => c.id === args.id);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(args.id);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.ADMIN,
       );
 
-      const movedColumns = moveColumn(args.id, args.newPosition);
+      const movedColumns = await moveColumnPersisted(args.id, args.newPosition);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',

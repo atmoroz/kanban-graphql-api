@@ -1,18 +1,18 @@
-import { columns, tasks } from '../../data/mock';
-import { notFound, unauthorized } from '../../lib/errors';
-import { assertBoardPermission } from '../../lib/permissions';
-import { getBoardById, SortOrder } from '../../services/board.service';
+import { unauthorized } from '../../lib/errors';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
+import { getBoardByIdPersisted, SortOrder } from '../../services/board.service';
+import { getColumnByIdPersisted } from '../../services/column.service';
 import { TaskSortBy } from '../../services/task-search.service';
 import {
-  getTaskById,
-  listTasksByColumn,
-  createTask,
-  updateTask,
-  deleteTask,
-  moveTask,
-  updateTaskLabels,
-  setTaskStatusOverride,
-  clearTaskStatusOverride,
+  getTaskByIdPersisted,
+  listTasksByColumnPersisted,
+  createTaskPersisted,
+  updateTaskPersisted,
+  deleteTaskPersisted,
+  moveTaskPersisted,
+  updateTaskLabelsPersisted,
+  setTaskStatusOverridePersisted,
+  clearTaskStatusOverridePersisted,
 } from '../../services/task.service';
 import { logActivity } from '../../services/activity.service';
 import { realtimePubSub } from '../../lib/pubsub';
@@ -22,26 +22,27 @@ import { BoardRole } from '../schema/types/board-role';
 
 export const taskResolvers = {
   Query: {
-    task: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
-      const task = getTaskById(id);
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
-      const board = getBoardById(column.boardId);
+    task: async (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+      const task = await getTaskByIdPersisted(id);
+      const column = await getColumnByIdPersisted(task.columnId);
+      const board = await getBoardByIdPersisted(column.boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) {
           unauthorized('Authentication required');
         }
 
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
       return task;
     },
 
-    tasksByColumn: (
+    tasksByColumn: async (
       _: unknown,
       args: {
         columnId: string;
@@ -56,27 +57,27 @@ export const taskResolvers = {
     ) => {
       const { columnId, ...paginationArgs } = args;
 
-      const column = columns.find(c => c.id === columnId);
-      if (!column) {
-        notFound('Column');
-      }
-
-      const board = getBoardById(column.boardId);
+      const column = await getColumnByIdPersisted(columnId);
+      const board = await getBoardByIdPersisted(column.boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) {
           unauthorized('Authentication required');
         }
 
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
-      return listTasksByColumn(columnId, paginationArgs);
+      return listTasksByColumnPersisted(columnId, paginationArgs);
     },
   },
 
   Mutation: {
-    createTask: (
+    createTask: async (
       _: unknown,
       args: {
         columnId: string;
@@ -93,20 +94,17 @@ export const taskResolvers = {
         unauthorized('Authentication required');
       }
 
-      const column = columns.find(c => c.id === args.columnId);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(args.columnId);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const created = createTask(args);
+      const created = await createTaskPersisted(args);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -118,7 +116,8 @@ export const taskResolvers = {
 
       return created;
     },
-    updateTask: (
+
+    updateTask: async (
       _: unknown,
       args: {
         id: string;
@@ -135,25 +134,18 @@ export const taskResolvers = {
         unauthorized('Authentication required');
       }
 
-      const task = tasks.find(t => t.id === args.id);
-      if (!task) {
-        notFound('Task');
-      }
+      const task = await getTaskByIdPersisted(args.id);
+      const column = await getColumnByIdPersisted(task.columnId);
 
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
-
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const updated = updateTask(args.id, args);
+      const updated = await updateTaskPersisted(args.id, args);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -166,30 +158,27 @@ export const taskResolvers = {
       return updated;
     },
 
-    deleteTask: (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
+    deleteTask: async (
+      _: unknown,
+      { id }: { id: string },
+      ctx: GraphQLContext,
+    ) => {
       if (!ctx.currentUser) {
         unauthorized('Authentication required');
       }
 
-      const task = tasks.find(t => t.id === id);
-      if (!task) {
-        notFound('Task');
-      }
+      const task = await getTaskByIdPersisted(id);
+      const column = await getColumnByIdPersisted(task.columnId);
 
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
-
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      deleteTask(id);
+      await deleteTaskPersisted(id);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -200,7 +189,7 @@ export const taskResolvers = {
       return true;
     },
 
-    moveTask: (
+    moveTask: async (
       _: unknown,
       args: {
         id: string;
@@ -213,25 +202,17 @@ export const taskResolvers = {
         unauthorized('Authentication required');
       }
 
-      const task = tasks.find(t => t.id === args.id);
-      if (!task) {
-        notFound('Task');
-      }
+      const targetColumn = await getColumnByIdPersisted(args.columnId);
 
-      const targetColumn = columns.find(c => c.id === args.columnId);
-      if (!targetColumn) {
-        notFound('Column');
-      }
-
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         targetColumn.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const moved = moveTask(args.id, args.columnId, args.position);
+      const moved = await moveTaskPersisted(args.id, args.columnId, args.position);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: targetColumn.boardId,
         entityType: 'TASK',
@@ -247,27 +228,25 @@ export const taskResolvers = {
 
       return moved;
     },
-    updateTaskLabels: (
+
+    updateTaskLabels: async (
       _: unknown,
       { taskId, labelIds }: { taskId: string; labelIds: string[] },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const task = getTaskById(taskId);
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
+      const task = await getTaskByIdPersisted(taskId);
+      const column = await getColumnByIdPersisted(task.columnId);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const updated = updateTaskLabels(taskId, labelIds);
+      const updated = await updateTaskLabelsPersisted(taskId, labelIds);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -281,28 +260,25 @@ export const taskResolvers = {
       return updated;
     },
 
-    updateTaskStatus: (
+    updateTaskStatus: async (
       _: unknown,
       { taskId, statusId }: { taskId: string; statusId: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const task = getTaskById(taskId);
+      const task = await getTaskByIdPersisted(taskId);
 
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(task.columnId);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const updated = setTaskStatusOverride(taskId, statusId);
+      const updated = await setTaskStatusOverridePersisted(taskId, statusId);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -316,28 +292,25 @@ export const taskResolvers = {
       return updated;
     },
 
-    clearTaskStatusOverride: (
+    clearTaskStatusOverride: async (
       _: unknown,
       { taskId }: { taskId: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const task = getTaskById(taskId);
+      const task = await getTaskByIdPersisted(taskId);
 
-      const column = columns.find(c => c.id === task.columnId);
-      if (!column) {
-        notFound('Column');
-      }
+      const column = await getColumnByIdPersisted(task.columnId);
 
-      assertBoardPermission(
+      await assertBoardPermissionDb(
         column.boardId,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const updated = clearTaskStatusOverride(taskId);
+      const updated = await clearTaskStatusOverridePersisted(taskId);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',

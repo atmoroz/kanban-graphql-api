@@ -21,3 +21,9 @@ Production-grade GraphQL API for a Kanban board with pagination, RBAC, optimisti
 - `RESEND_API_KEY` (optional): required only for `EMAIL_PROVIDER=resend`.
 - `BREVO_API_KEY` (optional): required only for `EMAIL_PROVIDER=brevo`.
 - If provider keys are missing, service falls back to `stub` (no real sending).
+
+## Database Sync Policy
+
+- This project is in production, but currently uses `prisma db push` for schema sync.
+- Migration history is intentionally not maintained at this stage.
+- When schema becomes stable, migration-based workflow can be introduced.

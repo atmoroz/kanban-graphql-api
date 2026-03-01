@@ -1,41 +1,49 @@
-import { getBoardById } from '../../services/board.service';
+import { getBoardByIdPersisted } from '../../services/board.service';
 import {
-  getStatusesByBoardId,
-  getStatusById,
+  getStatusesByBoardIdPersisted,
+  getStatusByIdPersisted,
 } from '../../services/status.service';
-import { assertBoardPermission } from '../../lib/permissions';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
 import { unauthorized } from '../../lib/errors';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
 export const statusResolvers = {
   Query: {
-    boardStatuses: (
+    boardStatuses: async (
       _: unknown,
       { boardId }: { boardId: string },
       ctx: GraphQLContext,
     ) => {
-      const board = getBoardById(boardId);
+      const board = await getBoardByIdPersisted(boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) unauthorized('Authentication required');
-        assertBoardPermission(boardId, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          boardId,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
-      return getStatusesByBoardId(boardId);
+      return getStatusesByBoardIdPersisted(boardId);
     },
 
-    statusById: (
+    statusById: async (
       _: unknown,
       { id }: { id: string },
       ctx: GraphQLContext,
     ) => {
-      const status = getStatusById(id);
-      const board = getBoardById(status.boardId);
+      const status = await getStatusByIdPersisted(id);
+      const board = await getBoardByIdPersisted(status.boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) unauthorized('Authentication required');
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
       return status;

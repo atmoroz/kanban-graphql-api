@@ -5,7 +5,7 @@ import { realtimeResolvers } from '../../graphql/resolvers/realtime.resolver';
 import { toSafeUser } from '../../data/mock/users';
 
 describe('realtime subscription access', () => {
-  it('rejects subscribe without auth', () => {
+  it('rejects subscribe without auth', async () => {
     const board = createBoard({
       title: 'Private board',
       visibility: 'PRIVATE',
@@ -22,10 +22,12 @@ describe('realtime subscription access', () => {
         },
       );
 
-    expect(subscribe).toThrowError(/Authentication required/i);
+    await expect(subscribe()).rejects.toThrowError(
+      /Authentication required/i,
+    );
   });
 
-  it('rejects subscribe for non-member user', () => {
+  it('rejects subscribe for non-member user', async () => {
     const owner = createUser({
       email: 'owner-sub@test.dev',
       passwordHash: 'hash',
@@ -53,7 +55,6 @@ describe('realtime subscription access', () => {
         },
       );
 
-    expect(subscribe).toThrowError(/Insufficient permissions/i);
+    await expect(subscribe()).rejects.toThrowError(/Insufficient permissions/i);
   });
 });
-
