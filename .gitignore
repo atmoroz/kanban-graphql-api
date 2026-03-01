@@ -3,6 +3,12 @@ dist
 .env
 .env.local
 .env.*
+!.env.example
 coverage
 .vscode
 docs
+/src/generated/prisma
+prisma/migrations
+# AI / Codex / Agents
+.agents/
+.codex/
