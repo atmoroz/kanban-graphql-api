@@ -1,18 +1,18 @@
-import { findUserById, toSafeUser } from '../../data/mock';
 import { unauthorized, notFound } from '../../lib/errors';
-import { assertBoardPermission } from '../../lib/permissions';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
 import {
   getBoardIdForTask,
   listBoardActivities,
   listTaskActivities,
 } from '../../services/activity.service';
-import { getBoardById } from '../../services/board.service';
+import { getBoardByIdPersisted } from '../../services/board.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
+import { prisma } from '../../lib/prisma';
 
 export const activityResolvers = {
   Query: {
-    taskActivities: (
+    taskActivities: async (
       _: unknown,
       args: {
         taskId: string;
@@ -27,14 +27,14 @@ export const activityResolvers = {
         unauthorized('Authentication required');
       }
 
-      const boardId = getBoardIdForTask(args.taskId);
-      assertBoardPermission(boardId, ctx.currentUser.id, BoardRole.VIEWER);
+      const boardId = await getBoardIdForTask(args.taskId);
+      await assertBoardPermissionDb(boardId, ctx.currentUser.id, BoardRole.VIEWER);
 
       const { taskId, ...paginationArgs } = args;
       return listTaskActivities(taskId, paginationArgs);
     },
 
-    boardActivities: (
+    boardActivities: async (
       _: unknown,
       args: {
         boardId: string;
@@ -49,8 +49,12 @@ export const activityResolvers = {
         unauthorized('Authentication required');
       }
 
-      getBoardById(args.boardId);
-      assertBoardPermission(args.boardId, ctx.currentUser.id, BoardRole.VIEWER);
+      await getBoardByIdPersisted(args.boardId);
+      await assertBoardPermissionDb(
+        args.boardId,
+        ctx.currentUser.id,
+        BoardRole.VIEWER,
+      );
 
       const { boardId, ...paginationArgs } = args;
       return listBoardActivities(boardId, paginationArgs);
@@ -58,13 +62,23 @@ export const activityResolvers = {
   },
 
   Activity: {
-    actor: (parent: { actorId: string }) => {
-      const user = findUserById(parent.actorId);
+    actor: async (parent: { actorId: string }) => {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: parent.actorId,
+        },
+      });
+
       if (!user) {
         notFound('User');
       }
 
-      return toSafeUser(user);
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name ?? undefined,
+        createdAt: user.createdAt,
+      };
     },
   },
 };

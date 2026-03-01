@@ -60,7 +60,7 @@ export async function registerUser(input: {
     });
     const token = signToken({ userId: user.id });
 
-    acceptPendingInvitesForUser({
+    await acceptPendingInvitesForUser({
       userId: user.id,
       email: user.email,
     });
@@ -100,7 +100,7 @@ export async function registerUser(input: {
   });
 
   const token = signToken({ userId: user.id });
-  acceptPendingInvitesForUser({
+  await acceptPendingInvitesForUser({
     userId: user.id,
     email: user.email,
   });
@@ -126,7 +126,7 @@ export async function loginUser(input: {
     }
 
     const token = signToken({ userId: user.id });
-    acceptPendingInvitesForUser({
+    await acceptPendingInvitesForUser({
       userId: user.id,
       email: user.email,
     });
@@ -161,7 +161,7 @@ export async function loginUser(input: {
   });
 
   const token = signToken({ userId: user.id });
-  acceptPendingInvitesForUser({
+  await acceptPendingInvitesForUser({
     userId: user.id,
     email: user.email,
   });

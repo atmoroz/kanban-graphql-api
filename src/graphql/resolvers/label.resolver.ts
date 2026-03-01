@@ -1,69 +1,81 @@
-import { getBoardById } from '../../services/board.service';
+import { getBoardByIdPersisted } from '../../services/board.service';
 import {
-  getLabelsByBoardId,
-  getLabelById,
-  createLabel,
-  updateLabel,
-  deleteLabel,
+  getLabelsByBoardIdPersisted,
+  getLabelByIdPersisted,
+  createLabelPersisted,
+  updateLabelPersisted,
+  deleteLabelPersisted,
 } from '../../services/label.service';
-import { assertBoardPermission } from '../../lib/permissions';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
 import { unauthorized } from '../../lib/errors';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
 export const labelResolvers = {
   Query: {
-    boardLabels: (
+    boardLabels: async (
       _: unknown,
       { boardId }: { boardId: string },
       ctx: GraphQLContext,
     ) => {
-      const board = getBoardById(boardId);
+      const board = await getBoardByIdPersisted(boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) unauthorized('Authentication required');
-        assertBoardPermission(boardId, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          boardId,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
-      return getLabelsByBoardId(boardId);
+      return getLabelsByBoardIdPersisted(boardId);
     },
   },
 
   Mutation: {
-    createLabel: (
+    createLabel: async (
       _: unknown,
       input: { boardId: string; name: string; color?: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const board = getBoardById(input.boardId);
-      assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.ADMIN);
+      const board = await getBoardByIdPersisted(input.boardId);
+      await assertBoardPermissionDb(board.id, ctx.currentUser.id, BoardRole.ADMIN);
 
-      return createLabel(input);
+      return createLabelPersisted(input);
     },
 
-    updateLabel: (
+    updateLabel: async (
       _: unknown,
       { id, ...input }: { id: string; name?: string; color?: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const label = getLabelById(id);
-      assertBoardPermission(label.boardId, ctx.currentUser.id, BoardRole.ADMIN);
+      const label = await getLabelByIdPersisted(id);
+      await assertBoardPermissionDb(
+        label.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
 
-      return updateLabel(id, input);
+      return updateLabelPersisted(id, input);
     },
 
-    deleteLabel: (
+    deleteLabel: async (
       _: unknown,
       { id }: { id: string },
       ctx: GraphQLContext,
     ) => {
       if (!ctx.currentUser) unauthorized('Authentication required');
-      const label = getLabelById(id);
-      assertBoardPermission(label.boardId, ctx.currentUser.id, BoardRole.ADMIN);
+      const label = await getLabelByIdPersisted(id);
+      await assertBoardPermissionDb(
+        label.boardId,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
 
-      return deleteLabel(id);
+      return deleteLabelPersisted(id);
     },
   },
 };

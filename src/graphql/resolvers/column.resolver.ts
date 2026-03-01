@@ -61,7 +61,7 @@ export const columnResolvers = {
 
       const column = await createColumnPersisted(args.boardId, args.title);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',
@@ -95,7 +95,7 @@ export const columnResolvers = {
 
       const updated = await updateColumnPersisted(args.id, args.title ?? '');
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: updated.boardId,
         entityType: 'COLUMN',
@@ -125,7 +125,7 @@ export const columnResolvers = {
 
       await deleteColumnPersisted(id);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',
@@ -158,7 +158,7 @@ export const columnResolvers = {
 
       const movedColumns = await moveColumnPersisted(args.id, args.newPosition);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'COLUMN',

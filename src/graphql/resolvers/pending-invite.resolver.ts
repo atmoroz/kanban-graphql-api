@@ -1,4 +1,3 @@
-import { findUserById, toSafeUser } from '../../data/mock';
 import { notFound, unauthorized } from '../../lib/errors';
 import {
   getPendingInvites,
@@ -7,6 +6,7 @@ import {
 } from '../../services/pending-invite.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
+import { prisma } from '../../lib/prisma';
 
 export const pendingInviteResolvers = {
   Query: {
@@ -69,13 +69,23 @@ export const pendingInviteResolvers = {
   },
 
   PendingInvite: {
-    invitedBy: (parent: { invitedByUserId: string }) => {
-      const user = findUserById(parent.invitedByUserId);
+    invitedBy: async (parent: { invitedByUserId: string }) => {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: parent.invitedByUserId,
+        },
+      });
+
       if (!user) {
         notFound('User');
       }
-      return toSafeUser(user);
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name ?? undefined,
+        createdAt: user.createdAt,
+      };
     },
   },
 };
-

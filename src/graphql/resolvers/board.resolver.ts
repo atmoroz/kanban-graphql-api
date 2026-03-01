@@ -81,7 +81,7 @@ export const boardResolvers = {
         ownerId: ctx.currentUser.id,
       });
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: board.id,
         entityType: 'BOARD',
@@ -110,7 +110,7 @@ export const boardResolvers = {
 
       const board = await updateBoardPersisted(args.id, args);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: board.id,
         entityType: 'BOARD',
@@ -134,7 +134,7 @@ export const boardResolvers = {
 
       await deleteBoardPersisted(id);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: id,
         entityType: 'BOARD',

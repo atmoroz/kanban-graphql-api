@@ -104,7 +104,7 @@ export const taskResolvers = {
 
       const created = await createTaskPersisted(args);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -145,7 +145,7 @@ export const taskResolvers = {
 
       const updated = await updateTaskPersisted(args.id, args);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -178,7 +178,7 @@ export const taskResolvers = {
 
       await deleteTaskPersisted(id);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -212,7 +212,7 @@ export const taskResolvers = {
 
       const moved = await moveTaskPersisted(args.id, args.columnId, args.position);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: targetColumn.boardId,
         entityType: 'TASK',
@@ -246,7 +246,7 @@ export const taskResolvers = {
 
       const updated = await updateTaskLabelsPersisted(taskId, labelIds);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -278,7 +278,7 @@ export const taskResolvers = {
 
       const updated = await setTaskStatusOverridePersisted(taskId, statusId);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
@@ -310,7 +310,7 @@ export const taskResolvers = {
 
       const updated = await clearTaskStatusOverridePersisted(taskId);
 
-      logActivity({
+      await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',

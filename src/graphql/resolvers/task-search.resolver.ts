@@ -1,13 +1,13 @@
 import { unauthorized } from '../../lib/errors';
-import { assertBoardPermission } from '../../lib/permissions';
-import { getBoardById } from '../../services/board.service';
-import { searchTasksByBoard } from '../../services/task-search.service';
+import { assertBoardPermissionDb } from '../../lib/permissions-db';
+import { getBoardByIdPersisted } from '../../services/board.service';
+import { searchTasksByBoardPersisted } from '../../services/task-search.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 
 export const taskSearchResolvers = {
   Query: {
-    tasksByBoard: (
+    tasksByBoard: async (
       _: unknown,
       args: {
         boardId: string;
@@ -30,19 +30,23 @@ export const taskSearchResolvers = {
       },
       ctx: GraphQLContext,
     ) => {
-      const board = getBoardById(args.boardId);
+      const board = await getBoardByIdPersisted(args.boardId);
 
       if (board.visibility !== 'PUBLIC') {
         if (!ctx.currentUser) {
           unauthorized('Authentication required');
         }
 
-        assertBoardPermission(board.id, ctx.currentUser.id, BoardRole.VIEWER);
+        await assertBoardPermissionDb(
+          board.id,
+          ctx.currentUser.id,
+          BoardRole.VIEWER,
+        );
       }
 
       const { first, after, last, before, ...searchArgs } = args;
 
-      return searchTasksByBoard(searchArgs, {
+      return searchTasksByBoardPersisted(searchArgs, {
         first,
         after,
         last,
