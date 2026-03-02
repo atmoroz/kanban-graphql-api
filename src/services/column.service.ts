@@ -3,6 +3,7 @@ import { getBoardById } from './board.service';
 import { columns, ColumnRecord, tasks, statuses } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { prisma } from '../lib/prisma';
+import { MAX_COLUMNS_PER_BOARD, assertLimit } from '../lib/limits';
 
 export function listColumns(boardId: string): ColumnRecord[] {
   return columns
@@ -21,6 +22,12 @@ export function createColumn(boardId: string, title: string): ColumnRecord {
   }
 
   const boardColumns = listColumns(boardId);
+  assertLimit(
+    boardColumns.length,
+    MAX_COLUMNS_PER_BOARD,
+    `Limit reached: maximum ${MAX_COLUMNS_PER_BOARD} columns per board`,
+  );
+
   const position = boardColumns.length;
 
   const boardStatuses = statuses
@@ -273,6 +280,12 @@ export async function createColumnPersisted(
   const position = await prisma.column.count({
     where: { boardId },
   });
+
+  assertLimit(
+    position,
+    MAX_COLUMNS_PER_BOARD,
+    `Limit reached: maximum ${MAX_COLUMNS_PER_BOARD} columns per board`,
+  );
 
   const created = await prisma.column.create({
     data: {

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { labels, LabelRecord, tasks } from '../data/mock';
 import { notFound, validationFailed } from '../lib/errors';
 import { prisma } from '../lib/prisma';
+import { MAX_LABELS_PER_BOARD, assertLimit } from '../lib/limits';
 
 export function getLabelsByBoardId(boardId: string): LabelRecord[] {
   return labels.filter(l => l.boardId === boardId);
@@ -21,6 +22,13 @@ export function createLabel(input: {
   if (!input.name.trim()) {
     validationFailed('Label name cannot be empty');
   }
+
+  const boardLabelCount = labels.filter(label => label.boardId === input.boardId).length;
+  assertLimit(
+    boardLabelCount,
+    MAX_LABELS_PER_BOARD,
+    `Limit reached: maximum ${MAX_LABELS_PER_BOARD} labels per board`,
+  );
 
   const label: LabelRecord = {
     id: randomUUID(),
@@ -170,6 +178,16 @@ export async function createLabelPersisted(input: {
   if (!input.name.trim()) {
     validationFailed('Label name cannot be empty');
   }
+
+  const boardLabelCount = await prisma.label.count({
+    where: { boardId: input.boardId },
+  });
+
+  assertLimit(
+    boardLabelCount,
+    MAX_LABELS_PER_BOARD,
+    `Limit reached: maximum ${MAX_LABELS_PER_BOARD} labels per board`,
+  );
 
   const created = await prisma.label.create({
     data: {
