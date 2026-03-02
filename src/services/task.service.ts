@@ -6,6 +6,7 @@ import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { TaskPriority } from '../types/task';
 import { prisma } from '../lib/prisma';
 import { TaskPriority as PrismaTaskPriority } from '@prisma/client';
+import { MAX_TASKS_PER_BOARD, assertLimit } from '../lib/limits';
 
 export function getTaskById(id: string): TaskRecord {
   const task = tasks.find(b => b.id === id);
@@ -43,6 +44,17 @@ export function createTask(input: {
 
   const column = columns.find(c => c.id === input.columnId);
   if (!column) notFound('Column');
+
+  const boardColumnIds = new Set(
+    columns.filter(item => item.boardId === column.boardId).map(item => item.id),
+  );
+  const boardTaskCount = tasks.filter(task => boardColumnIds.has(task.columnId)).length;
+
+  assertLimit(
+    boardTaskCount,
+    MAX_TASKS_PER_BOARD,
+    `Limit reached: maximum ${MAX_TASKS_PER_BOARD} tasks per board`,
+  );
 
   const statusId = column.statusId;
 
@@ -421,16 +433,31 @@ export async function createTaskPersisted(input: {
 
   const column = await prisma.column.findUnique({
     where: { id: input.columnId },
-    select: { id: true, statusId: true },
+    select: { id: true, boardId: true, statusId: true },
   });
 
   if (!column) {
     notFound('Column');
   }
 
-  const position = await prisma.task.count({
-    where: { columnId: input.columnId },
-  });
+  const [position, boardTaskCount] = await Promise.all([
+    prisma.task.count({
+      where: { columnId: input.columnId },
+    }),
+    prisma.task.count({
+      where: {
+        column: {
+          boardId: column.boardId,
+        },
+      },
+    }),
+  ]);
+
+  assertLimit(
+    boardTaskCount,
+    MAX_TASKS_PER_BOARD,
+    `Limit reached: maximum ${MAX_TASKS_PER_BOARD} tasks per board`,
+  );
 
   const created = await prisma.task.create({
     data: {
