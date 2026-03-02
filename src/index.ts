@@ -8,9 +8,18 @@ const yoga = createYoga({
   schema,
   graphqlEndpoint: '/graphql',
   context: createContext,
+  landingPage: false,
 });
+const server = createServer((req, res) => {
+  if (req.url === '/') {
+    res.statusCode = 302;
+    res.setHeader('Location', '/graphql');
+    res.end();
+    return;
+  }
 
-const server = createServer(yoga);
+  yoga(req, res);
+});
 
 const PORT = Number(process.env.PORT ?? 4001);
 

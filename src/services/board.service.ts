@@ -13,6 +13,7 @@ import { notFound, validationFailed } from '../lib/errors';
 import { paginateArray, PaginationArgs } from '../lib/pagination';
 import { BoardRole } from '../graphql/schema/types/board-role';
 import { prisma } from '../lib/prisma';
+import { MAX_BOARDS_PER_USER, assertLimit } from '../lib/limits';
 import {
   BoardVisibility as PrismaBoardVisibility,
   Board as PrismaBoard,
@@ -131,6 +132,20 @@ export function createBoard(input: {
   visibility: 'PUBLIC' | 'PRIVATE';
   ownerId?: string;
 }) {
+  if (input.ownerId) {
+    const boardIds = new Set(
+      boardMembers
+        .filter(member => member.userId === input.ownerId)
+        .map(member => member.boardId),
+    );
+
+    assertLimit(
+      boardIds.size,
+      MAX_BOARDS_PER_USER,
+      `Limit reached: maximum ${MAX_BOARDS_PER_USER} boards per user`,
+    );
+  }
+
   const board: BoardRecord = {
     id: randomUUID(),
     title: input.title,
@@ -285,6 +300,29 @@ export async function createBoardPersisted(input: {
 
   if (!input.title?.trim()) {
     validationFailed('Board title cannot be empty');
+  }
+
+  if (input.ownerId) {
+    const boardCount = await prisma.board.count({
+      where: {
+        OR: [
+          { ownerId: input.ownerId },
+          {
+            members: {
+              some: {
+                userId: input.ownerId,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    assertLimit(
+      boardCount,
+      MAX_BOARDS_PER_USER,
+      `Limit reached: maximum ${MAX_BOARDS_PER_USER} boards per user`,
+    );
   }
 
   const board = await prisma.board.create({

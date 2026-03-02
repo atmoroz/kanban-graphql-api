@@ -1,67 +1,67 @@
 # Epic 9: Optimistic & Realtime
 
-**Цель:** Зафиксировать и довести оптимистичные сценарии (мутации возвращают полный объект; move task/column); описать и по возможности реализовать подписки (realtime). Подписки допустимо оставить заглушками или TODO в первой версии.
+**Мета:** Зафіксувати та довести оптимістичні сценарії (мутації повертають повний об'єкт; move task/column); описати та за можливості реалізувати підписки (realtime). Підписки допустимо залишити заглушками або TODO в першій версії.
 
 ---
 
-## В scope
+## У scope
 
-**Фичи:** разд. 10 «Оптимистичные сценарии», разд. 13 «Subscriptions (Realtime)» в [FEATURES_AND_USE_CASES.md](../FEATURES_AND_USE_CASES.md).
+**Фічі:** розд. 10 «Оптимістичні сценарії», розд. 13 «Subscriptions (Realtime)» в [FEATURES_AND_USE_CASES.md](../FEATURES_AND_USE_CASES.md).
 
 **Use-cases:**
 
-| ID | Действие |
-|----|----------|
-| UC-O1 | Перемещение задачи — ответ с полной Task (columnId, position) |
-| UC-O2 | Перемещение колонки — ответ с полной Column (position) |
-| UC-O3 | Быстрое обновление (напр. смена статуса) — ответ с полной Task |
-| UC-O4 | Идемпотентность (idempotencyKey?) — при повторе тот же результат |
+| ID | Дія |
+|----|-----|
+| UC-O1 | Переміщення задачі — відповідь з повною Task (columnId, position) |
+| UC-O2 | Переміщення колонки — відповідь з повною Column (position) |
+| UC-O3 | Швидке оновлення (напр. зміна статусу) — відповідь з повною Task |
+| UC-O4 | Ідемпотентність (idempotencyKey?) — при повторі той самий результат |
 | UC-SUB1 | Subscription: Task created (boardId) → Task |
 | UC-SUB2 | Subscription: Task updated (boardId) → Task |
 | UC-SUB3 | Subscription: Column moved (boardId) → Column |
 
-- **Optimistic:** Все мутации, меняющие сущность (create/update/move task и column), уже возвращают полный объект — проверить и при необходимости доработать. Опционально: аргумент или заголовок idempotencyKey для повторных запросов (возврат кэшированного результата по ключу).
-- **Subscriptions:** В схеме описать подписки (например `taskCreated(boardId)`, `taskUpdated(boardId)`, `columnMoved(boardId)`). Реализация: либо graphql-ws (или аналог) с публикацией событий при соответствующих мутациях, либо заглушки (резолверы подписок возвращают async iterator с пустым или тестовым потоком, комментарий TODO). Доступ к подписке — только участники доски (проверка при subscribe).
+- **Optimistic:** Усі мутації, що змінюють сутність (create/update/move task та column), вже повертають повний об'єкт — перевірити та за потреби доробити. Опційно: аргумент або заголовок idempotencyKey для повторних запитів (повернення кешованого результату по ключу).
+- **Subscriptions:** У схемі описати підписки (наприклад `taskCreated(boardId)`, `taskUpdated(boardId)`, `columnMoved(boardId)`). Реалізація: або graphql-ws (або аналог) з публікацією подій при відповідних мутаціях, або заглушки (резолвери підписок повертають async iterator з порожнім або тестовим потоком, коментар TODO). Доступ до підписки — тільки учасники дошки (перевірка при subscribe).
 
-## Вне scope
+## Поза scope
 
-- Сложная идемпотентность (хранение по ключам дольше одной сессии). Другие транспорты кроме WebSocket для подписок.
-
----
-
-## Критерии приёмки
-
-- [ + ] MoveTask и moveColumn возвращают полную обновлённую сущность (Task/Column). updateTask при смене статуса тоже возвращает полную Task.
-- [ + ] В документации/схеме описаны подписки taskCreated, taskUpdated, columnMoved по boardId.
-- [ + ] Либо подписки работают (при мутации событие уходит подписчикам по boardId), либо в коде явные заглушки/TODO с пометкой «реализовать в следующей итерации».
-- [ + ] При реализации подписок: проверка прав на доску при subscribe; участники доски получают события.
-- [ ] Опционально: idempotencyKey в одной-двух мутациях и возврат того же результата при повторе.
+- Складна ідемпотентність (зберігання по ключах довше однієї сесії). Інші транспорти крім WebSocket для підписок.
 
 ---
 
-## Проверка кода (EPIC-09)
+## Критерії прийняття
 
-**Реализовано:**
-
-- **Оптимистичные ответы:** moveTask возвращает `TaskRecord` (полная задача с columnId, position); moveColumn возвращает `[Column!]!` (все колонки доски с обновлёнными position); createTask, updateTask, updateTaskLabels, updateTaskStatus, clearTaskStatusOverride возвращают полную Task. Эпик выполнен.
-- **Подписки в схеме:** `subscriptions/index.ts` — базовый тип Subscription; `subscriptions/realtime.ts` — extend с `taskCreated(boardId)`, `taskUpdated(boardId)`, `columnMoved(boardId)`. Типы возврата: Task!, Task!, Column!.
-- **Реализация подписок:** используется `@graphql-yoga/subscription` (createPubSub). В резолверах: `realtime.resolver.ts` — subscribe вызывает `realtimePubSub.subscribe('TASK_CREATED'|'TASK_UPDATED'|'COLUMN_MOVED', boardId)`; при мутациях вызывается `realtimePubSub.publish`: в task.resolver — TASK_CREATED после createTask, TASK_UPDATED после updateTask, moveTask, updateTaskLabels, updateTaskStatus, clearTaskStatusOverride; в column.resolver — COLUMN_MOVED после moveColumn. События уходят подписчикам по boardId.
-- **Права при subscribe:** в realtime.resolver перед подпиской вызывается `assertSubscribeAccess(ctx, boardId)` — проверка currentUser и assertBoardPermission(boardId, userId, VIEWER). Доступ только у участников доски.
-- **idempotencyKey:** не реализован (в эпике опционально).
+- [ + ] MoveTask та moveColumn повертають повну оновлену сутність (Task/Column). updateTask при зміні статусу теж повертає повну Task.
+- [ + ] У документації/схемі описані підписки taskCreated, taskUpdated, columnMoved по boardId.
+- [ + ] Або підписки працюють (при мутації подія йде підписникам по boardId), або в коді явні заглушки/TODO з позначкою «реалізувати в наступній ітерації».
+- [ + ] При реалізації підписок: перевірка прав на дошку при subscribe; учасники дошки отримують події.
+- [ ] Опційно: idempotencyKey в одній-двох мутаціях та повернення того ж результату при повторі.
 
 ---
 
-## Ссылки
+## Перевірка коду (EPIC-09)
 
-- [FEATURES_AND_USE_CASES.md](../FEATURES_AND_USE_CASES.md) — «10. Оптимистичные сценарии», «13. Subscriptions (Realtime)».
+**Реалізовано:**
+
+- **Оптимістичні відповіді:** moveTask повертає `TaskRecord` (повна задача з columnId, position); moveColumn повертає `[Column!]!` (усі колонки дошки з оновленими position); createTask, updateTask, updateTaskLabels, updateTaskStatus, clearTaskStatusOverride повертають повну Task. Епік виконано.
+- **Підписки в схемі:** `subscriptions/index.ts` — базовий тип Subscription; `subscriptions/realtime.ts` — extend з `taskCreated(boardId)`, `taskUpdated(boardId)`, `columnMoved(boardId)`. Типи повернення: Task!, Task!, Column!.
+- **Реалізація підписок:** використовується `@graphql-yoga/subscription` (createPubSub). У резолверах: `realtime.resolver.ts` — subscribe викликає `realtimePubSub.subscribe('TASK_CREATED'|'TASK_UPDATED'|'COLUMN_MOVED', boardId)`; при мутаціях викликається `realtimePubSub.publish`: у task.resolver — TASK_CREATED після createTask, TASK_UPDATED після updateTask, moveTask, updateTaskLabels, updateTaskStatus, clearTaskStatusOverride; у column.resolver — COLUMN_MOVED після moveColumn. Події йдуть підписникам по boardId.
+- **Права при subscribe:** у realtime.resolver перед підпискою викликається `assertSubscribeAccess(ctx, boardId)` — перевірка currentUser та assertBoardPermission(boardId, userId, VIEWER). Доступ тільки у учасників дошки.
+- **idempotencyKey:** не реалізовано (в епіку опційно).
 
 ---
 
-## Example: как протестить схемы
+## Посилання
 
-Ниже минимальный ручной сценарий проверки в GraphiQL/Playground (`http://localhost:4001/graphql`).
+- [FEATURES_AND_USE_CASES.md](../FEATURES_AND_USE_CASES.md) — «10. Оптимістичні сценарії», «13. Subscriptions (Realtime)».
 
-1. Авторизуйся и возьми токен:
+---
+
+## Example: як протестити схеми
+
+Нижче мінімальний ручний сценарій перевірки в GraphiQL/Playground (`http://localhost:4001/graphql`).
+
+1. Авторизуйся та візьми токен:
 
 ```graphql
 mutation Login {
@@ -72,7 +72,7 @@ mutation Login {
 }
 ```
 
-2. В headers добавь:
+2. У headers додай:
 
 ```json
 {
@@ -80,7 +80,7 @@ mutation Login {
 }
 ```
 
-3. Подпишись на события (в отдельной вкладке):
+3. Підпишись на події (в окремій вкладці):
 
 ```graphql
 subscription OnTaskCreated($boardId: ID!) {
@@ -99,7 +99,7 @@ subscription OnTaskCreated($boardId: ID!) {
 }
 ```
 
-4. В другой вкладке выполни мутацию и проверь событие + полный объект:
+4. В іншій вкладці виконай мутацію та перевір подію + повний об'єкт:
 
 ```graphql
 mutation CreateTask($columnId: ID!) {
@@ -117,7 +117,7 @@ mutation CreateTask($columnId: ID!) {
 }
 ```
 
-5. Проверка `taskUpdated`:
+5. Перевірка `taskUpdated`:
 
 ```graphql
 subscription OnTaskUpdated($boardId: ID!) {
@@ -131,7 +131,7 @@ subscription OnTaskUpdated($boardId: ID!) {
 }
 ```
 
-И затем, в другой вкладке:
+І потім, в іншій вкладці:
 
 ```graphql
 mutation MoveTask($id: ID!, $columnId: ID!, $position: Int) {
@@ -144,7 +144,7 @@ mutation MoveTask($id: ID!, $columnId: ID!, $position: Int) {
 }
 ```
 
-6. Проверка `columnMoved`:
+6. Перевірка `columnMoved`:
 
 ```graphql
 subscription OnColumnMoved($boardId: ID!) {
@@ -157,7 +157,7 @@ subscription OnColumnMoved($boardId: ID!) {
 }
 ```
 
-И затем:
+І потім:
 
 ```graphql
 mutation MoveColumn($id: ID!, $newPosition: Int!) {
