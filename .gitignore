@@ -6,7 +6,6 @@ dist
 !.env.example
 coverage
 .vscode
-docs
 /src/generated/prisma
 prisma/migrations
 # AI / Codex / Agents
