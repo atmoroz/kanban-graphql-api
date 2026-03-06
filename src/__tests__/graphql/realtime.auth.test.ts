@@ -17,6 +17,7 @@ describe('realtime subscription access', () => {
         { boardId: board.id },
         {
           request: new Request('http://localhost/graphql'),
+          responseHeaders: new Headers(),
           currentUser: null,
           authToken: null,
         },
@@ -50,6 +51,7 @@ describe('realtime subscription access', () => {
         { boardId: board.id },
         {
           request: new Request('http://localhost/graphql'),
+          responseHeaders: new Headers(),
           currentUser: toSafeUser(outsider),
           authToken: 'test-token',
         },
