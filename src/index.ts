@@ -12,15 +12,7 @@ const allowedOrigins = [
 const yoga = createYoga({
   schema,
   graphqlEndpoint: '/graphql',
-  // Передаємо і request, і responseHeaders в createContext,
-  // щоб резолвери могли встановлювати cookies.
-  context: initialContext =>
-    createContext({
-      request: initialContext.request,
-      // responseHeaders є в реальному контексті Yoga, але може не бути
-      // описаний у типах, тому обгортаємо через any.
-      responseHeaders: (initialContext as any).responseHeaders,
-    }),
+  context: createContext,
   landingPage: false,
   cors: {
     origin: allowedOrigins,
