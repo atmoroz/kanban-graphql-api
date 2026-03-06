@@ -16,11 +16,7 @@ import { BoardRole } from '../schema/types/board-role';
 
 export const boardResolvers = {
   Query: {
-    board: async (
-      _: unknown,
-      { id }: { id: string },
-      ctx: GraphQLContext,
-    ) => {
+    board: async (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
       const board = await getBoardByIdPersisted(id);
 
       if (board.visibility !== 'PUBLIC') {
@@ -106,7 +102,11 @@ export const boardResolvers = {
         unauthorized('Authentication required');
       }
 
-      await assertBoardPermissionDb(args.id, ctx.currentUser.id, BoardRole.ADMIN);
+      await assertBoardPermissionDb(
+        args.id,
+        ctx.currentUser.id,
+        BoardRole.ADMIN,
+      );
 
       const board = await updateBoardPersisted(args.id, args);
 
@@ -132,8 +132,6 @@ export const boardResolvers = {
 
       await assertBoardPermissionDb(id, ctx.currentUser.id, BoardRole.OWNER);
 
-      await deleteBoardPersisted(id);
-
       await logActivity({
         actorId: ctx.currentUser.id,
         boardId: id,
@@ -141,6 +139,8 @@ export const boardResolvers = {
         entityId: id,
         action: 'DELETE',
       });
+
+      await deleteBoardPersisted(id);
 
       return true;
     },
