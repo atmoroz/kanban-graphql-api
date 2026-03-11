@@ -7,6 +7,7 @@ export const taskMutations = `
       priority: TaskPriority!
       dueDate: DateTime
       assigneeId: ID
+      labelIds: [ID!]
     ): Task!
 
     updateTask(
