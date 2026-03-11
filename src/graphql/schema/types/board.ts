@@ -4,6 +4,22 @@ export const boardTypes = `
     PRIVATE
   }
 
+  type BoardPermissions {
+    moveColumn: Boolean!
+    moveCard: Boolean!
+
+    createColumn: Boolean!
+    createTask: Boolean!
+
+    updateTask: Boolean!
+    deleteTask: Boolean!
+
+    manageLabels: Boolean!
+
+    inviteMember: Boolean!
+    manageBoardMembers: Boolean!
+  }
+
   type Board {
     id: ID!
     title: String!
@@ -11,6 +27,7 @@ export const boardTypes = `
     visibility: BoardVisibility!
     createdAt: DateTime!
     updatedAt: DateTime!
+     permissions: BoardPermissions!
   }
 
   type BoardEdge {

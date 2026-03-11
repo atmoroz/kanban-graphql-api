@@ -87,6 +87,7 @@ export const taskResolvers = {
         dueDate?: Date;
         assigneeId?: string;
         position?: number;
+        labelIds?: string[];
       },
       ctx: GraphQLContext,
     ) => {
@@ -102,19 +103,26 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      const created = await createTaskPersisted(args);
+      const { labelIds, ...createInput } = args;
+
+      const created = await createTaskPersisted(createInput);
+
+      const taskWithLabels =
+        labelIds && labelIds.length > 0
+          ? await updateTaskLabelsPersisted(created.id, labelIds)
+          : created;
 
       await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
-        entityId: created.id,
+        entityId: taskWithLabels.id,
         action: 'CREATE',
       });
 
-      realtimePubSub.publish('TASK_CREATED', column.boardId, created);
+      realtimePubSub.publish('TASK_CREATED', column.boardId, taskWithLabels);
 
-      return created;
+      return taskWithLabels;
     },
 
     updateTask: async (
@@ -198,23 +206,53 @@ export const taskResolvers = {
       },
       ctx: GraphQLContext,
     ) => {
+      const targetColumn = await getColumnByIdPersisted(args.columnId);
+      const board = await getBoardByIdPersisted(targetColumn.boardId);
+
+      if (board.visibility === 'PUBLIC') {
+        const moved = await moveTaskPersisted(
+          args.id,
+          args.columnId,
+          args.position,
+        );
+
+        if (ctx.currentUser) {
+          await logActivity({
+            actorId: ctx.currentUser.id,
+            boardId: board.id,
+            entityType: 'TASK',
+            entityId: moved.id,
+            action: 'MOVE',
+            diff:
+              args.position !== undefined
+                ? `columnId:${args.columnId};position:${args.position}`
+                : `columnId:${args.columnId}`,
+          });
+        }
+
+        realtimePubSub.publish('TASK_UPDATED', board.id, moved);
+        return moved;
+      }
+
       if (!ctx.currentUser) {
         unauthorized('Authentication required');
       }
 
-      const targetColumn = await getColumnByIdPersisted(args.columnId);
-
       await assertBoardPermissionDb(
-        targetColumn.boardId,
+        board.id,
         ctx.currentUser.id,
         BoardRole.MEMBER,
       );
 
-      const moved = await moveTaskPersisted(args.id, args.columnId, args.position);
+      const moved = await moveTaskPersisted(
+        args.id,
+        args.columnId,
+        args.position,
+      );
 
       await logActivity({
         actorId: ctx.currentUser.id,
-        boardId: targetColumn.boardId,
+        boardId: board.id,
         entityType: 'TASK',
         entityId: moved.id,
         action: 'MOVE',
@@ -224,7 +262,7 @@ export const taskResolvers = {
             : `columnId:${args.columnId}`,
       });
 
-      realtimePubSub.publish('TASK_UPDATED', targetColumn.boardId, moved);
+      realtimePubSub.publish('TASK_UPDATED', board.id, moved);
 
       return moved;
     },
