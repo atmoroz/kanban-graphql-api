@@ -153,12 +153,50 @@ export const taskResolvers = {
 
       const updated = await updateTaskPersisted(args.id, args);
 
+      const changedFields: string[] = [];
+
+      if (args.title !== undefined && args.title !== task.title) {
+        changedFields.push('title');
+      }
+      if (
+        args.description !== undefined &&
+        args.description !== task.description
+      ) {
+        changedFields.push('description');
+      }
+      if (args.priority !== undefined && args.priority !== task.priority) {
+        changedFields.push('priority');
+      }
+      if (
+        args.dueDate !== undefined &&
+        ((args.dueDate && !task.dueDate) ||
+          (!args.dueDate && task.dueDate) ||
+          (args.dueDate &&
+            task.dueDate &&
+            args.dueDate.getTime() !== task.dueDate.getTime()))
+      ) {
+        changedFields.push('dueDate');
+      }
+      if (
+        args.assigneeId !== undefined &&
+        args.assigneeId !== task.assigneeId
+      ) {
+        changedFields.push('assigneeId');
+      }
+      if (args.statusId !== undefined && args.statusId !== task.statusId) {
+        changedFields.push('statusId');
+      }
+
       await logActivity({
         actorId: ctx.currentUser.id,
         boardId: column.boardId,
         entityType: 'TASK',
         entityId: updated.id,
         action: 'UPDATE',
+        diff:
+          changedFields.length > 0
+            ? `fields: ${changedFields.join(', ')}`
+            : undefined,
       });
 
       realtimePubSub.publish('TASK_UPDATED', column.boardId, updated);
