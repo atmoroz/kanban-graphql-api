@@ -21,15 +21,8 @@ export const activityResolvers = {
         last?: number;
         before?: string;
       },
-      ctx: GraphQLContext,
+      _ctx: GraphQLContext,
     ) => {
-      if (!ctx.currentUser) {
-        unauthorized('Authentication required');
-      }
-
-      const boardId = await getBoardIdForTask(args.taskId);
-      await assertBoardPermissionDb(boardId, ctx.currentUser.id, BoardRole.VIEWER);
-
       const { taskId, ...paginationArgs } = args;
       return listTaskActivities(taskId, paginationArgs);
     },
@@ -43,19 +36,8 @@ export const activityResolvers = {
         last?: number;
         before?: string;
       },
-      ctx: GraphQLContext,
+      _ctx: GraphQLContext,
     ) => {
-      if (!ctx.currentUser) {
-        unauthorized('Authentication required');
-      }
-
-      await getBoardByIdPersisted(args.boardId);
-      await assertBoardPermissionDb(
-        args.boardId,
-        ctx.currentUser.id,
-        BoardRole.VIEWER,
-      );
-
       const { boardId, ...paginationArgs } = args;
       return listBoardActivities(boardId, paginationArgs);
     },
