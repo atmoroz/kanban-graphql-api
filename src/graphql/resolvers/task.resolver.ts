@@ -246,12 +246,13 @@ export const taskResolvers = {
     ) => {
       const targetColumn = await getColumnByIdPersisted(args.columnId);
       const board = await getBoardByIdPersisted(targetColumn.boardId);
+      const position = args.position ?? undefined;
 
       if (board.visibility === 'PUBLIC') {
         const moved = await moveTaskPersisted(
           args.id,
           args.columnId,
-          args.position,
+          position,
         );
 
         if (ctx.currentUser) {
@@ -262,8 +263,8 @@ export const taskResolvers = {
             entityId: moved.id,
             action: 'MOVE',
             diff:
-              args.position !== undefined
-                ? `columnId:${args.columnId};position:${args.position}`
+              position !== undefined
+                ? `columnId:${args.columnId};position:${position}`
                 : `columnId:${args.columnId}`,
           });
         }
@@ -282,11 +283,7 @@ export const taskResolvers = {
         BoardRole.MEMBER,
       );
 
-      const moved = await moveTaskPersisted(
-        args.id,
-        args.columnId,
-        args.position,
-      );
+      const moved = await moveTaskPersisted(args.id, args.columnId, position);
 
       await logActivity({
         actorId: ctx.currentUser.id,
@@ -295,8 +292,8 @@ export const taskResolvers = {
         entityId: moved.id,
         action: 'MOVE',
         diff:
-          args.position !== undefined
-            ? `columnId:${args.columnId};position:${args.position}`
+          position !== undefined
+            ? `columnId:${args.columnId};position:${position}`
             : `columnId:${args.columnId}`,
       });
 
