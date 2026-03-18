@@ -35,14 +35,24 @@ const server = createServer((req, res) => {
   yoga(req, res);
 });
 
-function toFetchRequest(req: IncomingMessage): Request {
+function toFetchRequest(
+  req: IncomingMessage,
+  extraHeaders?: Record<string, string>,
+): Request {
   const host = req.headers.host ?? 'localhost';
   const url = new URL(req.url ?? '/graphql', `http://${host}`);
+
+  const headers = new Headers(req.headers as unknown as HeadersInit);
+  if (extraHeaders) {
+    for (const [key, value] of Object.entries(extraHeaders)) {
+      if (value) headers.set(key, value);
+    }
+  }
 
   // Node's IncomingMessage headers are compatible with fetch HeadersInit
   return new Request(url, {
     method: req.method,
-    headers: req.headers as unknown as HeadersInit,
+    headers,
   });
 }
 
@@ -54,9 +64,20 @@ useServer(
     schema,
     execute,
     subscribe,
-    context: async (ctx: { extra: { request: IncomingMessage } }) => {
+    context: async (ctx: {
+      extra: { request: IncomingMessage };
+      connectionParams?: unknown;
+    }) => {
+      const params = (ctx.connectionParams ?? {}) as Record<string, unknown>;
+      const auth =
+        (params.Authorization as string | undefined) ??
+        (params.authorization as string | undefined);
+
       // ctx.extra.request is the initial upgrade request (IncomingMessage)
-      const request = toFetchRequest(ctx.extra.request);
+      const request = toFetchRequest(
+        ctx.extra.request,
+        auth ? { authorization: auth } : undefined,
+      );
       return createContext({ request });
     },
   },
