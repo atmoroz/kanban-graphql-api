@@ -1,4 +1,4 @@
-import { PubSub } from 'graphql-subscriptions';
+import { createPubSub } from '@graphql-yoga/subscription';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import IORedis from 'ioredis';
 
@@ -15,36 +15,44 @@ function trigger(event: RealtimeEventName, boardId: string): string {
   return `${event}:${boardId}`;
 }
 
-function createEngine() {
-  const redisUrl = process.env.REDIS_URL?.trim();
-  if (!redisUrl) {
-    return new PubSub() as unknown as PubSubEngineLike;
-  }
+const redisUrl = process.env.REDIS_URL?.trim();
 
+type RealtimePubSub = {
+  publish: (event: RealtimeEventName, boardId: string, payload: unknown) => any;
+  subscribe: (
+    event: RealtimeEventName,
+    boardId: string,
+  ) => AsyncIterableIterator<unknown>;
+};
+
+let realtimePubSubImpl: RealtimePubSub;
+
+if (!redisUrl) {
+  // In-memory implementation for single-instance runtime.
+  // @graphql-yoga/subscription provides asyncIterator-compatible interface.
+  const inMemory = createPubSub<{
+    TASK_CREATED: [boardId: string, payload: TaskRecord];
+    TASK_UPDATED: [boardId: string, payload: TaskRecord];
+    COLUMN_MOVED: [boardId: string, payload: ColumnRecord];
+  }>();
+
+  realtimePubSubImpl = {
+    publish: (event, boardId, payload) => (inMemory as any).publish(event, boardId, payload),
+    subscribe: (event, boardId) => (inMemory as any).subscribe(event, boardId),
+  };
+} else {
+  // Redis-backed implementation for multi-instance runtime.
   const publisher = new IORedis(redisUrl);
   const subscriber = new IORedis(redisUrl);
+  const redisPubSub = new RedisPubSub({ publisher, subscriber });
 
-  return new RedisPubSub({ publisher, subscriber }) as unknown as PubSubEngineLike;
+  realtimePubSubImpl = {
+    publish: (event, boardId, payload) =>
+      redisPubSub.publish(trigger(event, boardId), payload as unknown),
+    subscribe: (event, boardId) =>
+      redisPubSub.asyncIterator(trigger(event, boardId)),
+  };
 }
 
-type PubSubEngineLike = {
-  publish: (triggerName: string, payload: unknown) => Promise<void>;
-  asyncIterator: (triggerName: string) => AsyncIterableIterator<unknown>;
-};
-
-const engine: PubSubEngineLike = createEngine();
-
-export const realtimePubSub = {
-  publish<E extends RealtimeEventName>(
-    event: E,
-    boardId: string,
-    payload: RealtimePayloadByEvent[E],
-  ) {
-    return engine.publish(trigger(event, boardId), payload);
-  },
-
-  subscribe<E extends RealtimeEventName>(event: E, boardId: string) {
-    return engine.asyncIterator(trigger(event, boardId));
-  },
-};
+export const realtimePubSub = realtimePubSubImpl;
 
