@@ -4,10 +4,15 @@ import IORedis from 'ioredis';
 
 import { ColumnRecord, TaskRecord } from '../data/mock';
 
-type RealtimeEventName = 'TASK_CREATED' | 'TASK_UPDATED' | 'COLUMN_MOVED';
+type RealtimeEventName =
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_DELETED'
+  | 'COLUMN_MOVED';
 type RealtimePayloadByEvent = {
   TASK_CREATED: TaskRecord;
   TASK_UPDATED: TaskRecord;
+  TASK_DELETED: TaskRecord;
   COLUMN_MOVED: ColumnRecord;
 };
 
@@ -33,6 +38,7 @@ if (!redisUrl) {
   const inMemory = createPubSub<{
     TASK_CREATED: [boardId: string, payload: TaskRecord];
     TASK_UPDATED: [boardId: string, payload: TaskRecord];
+    TASK_DELETED: [boardId: string, payload: TaskRecord];
     COLUMN_MOVED: [boardId: string, payload: ColumnRecord];
   }>();
 

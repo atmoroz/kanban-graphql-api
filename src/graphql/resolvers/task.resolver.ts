@@ -232,6 +232,8 @@ export const taskResolvers = {
         action: 'DELETE',
       });
 
+      realtimePubSub.publish('TASK_DELETED', column.boardId, task);
+
       return true;
     },
 
