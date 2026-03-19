@@ -43,6 +43,18 @@ export const realtimeResolvers = {
       resolve: (payload: unknown) => payload,
     },
 
+    taskDeleted: {
+      subscribe: async (
+        _: unknown,
+        { boardId }: { boardId: string },
+        ctx: GraphQLContext,
+      ) => {
+        await assertSubscribeAccess(ctx, boardId);
+        return realtimePubSub.subscribe('TASK_DELETED', boardId);
+      },
+      resolve: (payload: unknown) => payload,
+    },
+
     columnMoved: {
       subscribe: async (
         _: unknown,
