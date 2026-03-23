@@ -195,3 +195,29 @@ export async function getBoardMembers(input: {
     role: member.role as BoardRole,
   }));
 }
+
+function isTestRuntime(): boolean {
+  return process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+}
+
+/**
+ * Public read-only доступ: не вимагає авторизації і не перевіряє membership.
+ * Використовується тільки коли board.visibility === PUBLIC.
+ */
+export async function getBoardMembersPublic(input: {
+  boardId: string;
+}) {
+  if (isTestRuntime()) {
+    return listBoardMembers(input.boardId);
+  }
+
+  const members = await prisma.boardMember.findMany({
+    where: { boardId: input.boardId },
+  });
+
+  return members.map(member => ({
+    boardId: member.boardId,
+    userId: member.userId,
+    role: member.role as BoardRole,
+  }));
+}

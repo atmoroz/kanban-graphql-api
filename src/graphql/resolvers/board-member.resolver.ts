@@ -3,10 +3,12 @@ import {
   updateBoardMemberRole,
   removeBoardMember,
   getBoardMembers,
+  getBoardMembersPublic,
 } from '../../services/board-member.service';
 import { GraphQLContext } from '../context';
 import { unauthorized, notFound } from '../../lib/errors';
 import { prisma } from '../../lib/prisma';
+import { getBoardByIdPersisted } from '../../services/board.service';
 
 export const boardMemberResolvers = {
   Query: {
@@ -15,6 +17,14 @@ export const boardMemberResolvers = {
       { boardId }: { boardId: string },
       ctx: GraphQLContext,
     ) => {
+      const board = await getBoardByIdPersisted(boardId);
+
+      // PUBLIC-дошка: читаємо членів без авторизації.
+      if (board.visibility === 'PUBLIC') {
+        return await getBoardMembersPublic({ boardId });
+      }
+
+      // PRIVATE-дошка: потрібна авторизація.
       if (!ctx.currentUser) unauthorized('Authentication required');
 
       return await getBoardMembers({

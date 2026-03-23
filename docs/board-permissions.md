@@ -20,7 +20,7 @@ type BoardPermissions {
 
 Board Type
 
-Добавляем permissions внутрь Board.
+Додаємо `permissions` всередину `Board`.
 type Board {
   id: ID!
   title: String!
@@ -53,7 +53,7 @@ query Board($id: ID!) {
   }
 }
 
-Пример логики на backend. нужно сделать на основании тех ограничений что у нас есть
+Приклад логіки на бекенді. Потрібно зробити на основі тих обмежень, які у нас є
 function buildBoardPermissions(role: BoardRole): BoardPermissions {
   switch (role) {
     case "ADMIN":
