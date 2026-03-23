@@ -79,7 +79,7 @@ function buildBoardPermissions(args: {
 }): BoardPermissionsGql {
   const { role, visibility, isAuthenticated } = args;
 
-  // PUBLIC-дошка: будь-хто може рухати карточки.
+  // PUBLIC-дошка: будь-хто може рухати картки.
   if (visibility === 'PUBLIC') {
     // Гість або залогінений, але не учасник дошки
     if (!isAuthenticated || !role) {
