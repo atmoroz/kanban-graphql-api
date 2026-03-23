@@ -1,55 +1,29 @@
 import { notFound, unauthorized } from '../../lib/errors';
 import {
-  getPendingInvites,
-  getPendingInvitesByEmail,
-  getPendingInvitesPublic,
-  getPendingInvitesByEmailPublic,
+  getPendingInvitesAny,
+  getPendingInvitesByEmailAny,
   inviteByEmail,
 } from '../../services/pending-invite.service';
 import { GraphQLContext } from '../context';
 import { BoardRole } from '../schema/types/board-role';
 import { prisma } from '../../lib/prisma';
-import { getBoardByIdPersisted } from '../../services/board.service';
 
 export const pendingInviteResolvers = {
   Query: {
     pendingInvites: (
       _: unknown,
       { boardId }: { boardId: string },
-      ctx: GraphQLContext,
+      _ctx: GraphQLContext,
     ) => {
-      // Для PUBLIC-дошки дозволяємо читання без авторизації.
-      return (async () => {
-        const board = await getBoardByIdPersisted(boardId);
-        if (board.visibility === 'PUBLIC') {
-          return getPendingInvitesPublic({ boardId });
-        }
-
-        if (!ctx.currentUser) unauthorized('Authentication required');
-
-        return getPendingInvites({
-          boardId,
-          actorUserId: ctx.currentUser.id,
-        });
-      })();
+      return getPendingInvitesAny({ boardId });
     },
 
     pendingInvitesByEmail: (
       _: unknown,
       { email }: { email: string },
-      ctx: GraphQLContext,
+      _ctx: GraphQLContext,
     ) => {
-      return (async () => {
-        // Без авторизації дозволяємо тільки запрошення, які належать PUBLIC дошкам.
-        if (!ctx.currentUser) {
-          return getPendingInvitesByEmailPublic({ email });
-        }
-
-        return getPendingInvitesByEmail({
-          email,
-          actorUserId: ctx.currentUser.id,
-        });
-      })();
+      return getPendingInvitesByEmailAny({ email });
     },
   },
 
