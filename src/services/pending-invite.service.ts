@@ -271,6 +271,65 @@ export async function getPendingInvites(input: {
   return mapped;
 }
 
+/**
+ * Public read-only access (no auth): використовується тільки для board.visibility === PUBLIC.
+ */
+export async function getPendingInvitesPublic(input: {
+  boardId: string;
+}): Promise<PendingInviteRecord[]> {
+  if (isTestRuntime()) {
+    const board = getBoardById(input.boardId);
+    if (board.visibility !== 'PUBLIC') {
+      forbidden('Authentication required');
+    }
+    return listPendingInvitesByBoard(input.boardId);
+  }
+
+  const board = await getBoardByIdPersisted(input.boardId);
+  if (board.visibility !== 'PUBLIC') {
+    forbidden('Authentication required');
+  }
+
+  const invites = await prisma.pendingInvite.findMany({
+    where: { boardId: input.boardId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const mapped = invites.map(toPendingInviteRecord);
+  replaceMockPendingInvitesByBoard(input.boardId, mapped);
+  return mapped;
+}
+
+/**
+ * Public read-only by email: повертає тільки запрошення,
+ * які належать до PUBLIC дошок.
+ */
+export async function getPendingInvitesByEmailPublic(input: {
+  email: string;
+}): Promise<PendingInviteRecord[]> {
+  const normalizedEmail = input.email.toLowerCase().trim();
+
+  if (isTestRuntime()) {
+    const invites = listPendingInvitesByEmail(normalizedEmail);
+    return invites.filter(inv => getBoardById(inv.boardId).visibility === 'PUBLIC');
+  }
+
+  const invites = await prisma.pendingInvite.findMany({
+    where: { email: normalizedEmail },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      board: {
+        select: { visibility: true },
+      },
+    },
+  });
+
+  const publicInvites = invites.filter(inv => inv.board.visibility === 'PUBLIC');
+  const mapped = publicInvites.map(toPendingInviteRecord);
+  mapped.forEach(invite => upsertMockPendingInvite(invite));
+  return mapped;
+}
+
 export async function getPendingInvitesByEmail(input: {
   email: string;
   actorUserId: string;
