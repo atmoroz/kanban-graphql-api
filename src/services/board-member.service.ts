@@ -9,6 +9,7 @@ import { BoardRole } from '../graphql/schema/types/board-role';
 import { assertBoardPermissionDb } from '../lib/permissions-db';
 import { conflict, notFound, forbidden } from '../lib/errors';
 import { prisma } from '../lib/prisma';
+import { getBoardByIdPersisted } from './board.service';
 
 /* ===== Invite ===== */
 
@@ -181,6 +182,41 @@ export async function getBoardMembers(input: {
 
   const existingMockMembers = listBoardMembers(input.boardId);
   existingMockMembers.forEach(m => removeMemberRecord(m.boardId, m.userId));
+  members.forEach(member => {
+    addBoardMember({
+      boardId: member.boardId,
+      userId: member.userId,
+      role: member.role as BoardRole,
+    });
+  });
+
+  return members.map(member => ({
+    boardId: member.boardId,
+    userId: member.userId,
+    role: member.role as BoardRole,
+  }));
+}
+
+/**
+ * Public read access (no auth / no role checks).
+ * Used by query `boardMembers` for any board visibility.
+ */
+export async function getBoardMembersAny(input: { boardId: string }) {
+  await getBoardByIdPersisted(input.boardId);
+
+  if (isTestRuntime()) {
+    return listBoardMembers(input.boardId);
+  }
+
+  const members = await prisma.boardMember.findMany({
+    where: {
+      boardId: input.boardId,
+    },
+  });
+
+  const existingMockMembers = listBoardMembers(input.boardId);
+  existingMockMembers.forEach(m => removeMemberRecord(m.boardId, m.userId));
+
   members.forEach(member => {
     addBoardMember({
       boardId: member.boardId,

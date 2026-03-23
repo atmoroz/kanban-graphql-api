@@ -272,6 +272,34 @@ export async function getPendingInvites(input: {
 }
 
 /**
+ * Public read access (no auth / no role checks).
+ * Used by query `pendingInvites` for any board visibility.
+ */
+export async function getPendingInvitesAny(input: {
+  boardId: string;
+}): Promise<PendingInviteRecord[]> {
+  if (isTestRuntime()) {
+    getBoardById(input.boardId);
+    return listPendingInvitesByBoard(input.boardId);
+  }
+
+  await getBoardByIdPersisted(input.boardId);
+
+  const invites = await prisma.pendingInvite.findMany({
+    where: {
+      boardId: input.boardId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  const mapped = invites.map(toPendingInviteRecord);
+  replaceMockPendingInvitesByBoard(input.boardId, mapped);
+  return mapped;
+}
+
+/**
  * Public read-only access (no auth): використовується тільки для board.visibility === PUBLIC.
  */
 export async function getPendingInvitesPublic(input: {
@@ -297,6 +325,28 @@ export async function getPendingInvitesPublic(input: {
 
   const mapped = invites.map(toPendingInviteRecord);
   replaceMockPendingInvitesByBoard(input.boardId, mapped);
+  return mapped;
+}
+
+/**
+ * Public read access by email (no auth / no ownership checks).
+ */
+export async function getPendingInvitesByEmailAny(input: {
+  email: string;
+}): Promise<PendingInviteRecord[]> {
+  const normalizedEmail = input.email.toLowerCase().trim();
+
+  if (isTestRuntime()) {
+    return listPendingInvitesByEmail(normalizedEmail);
+  }
+
+  const invites = await prisma.pendingInvite.findMany({
+    where: { email: normalizedEmail },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const mapped = invites.map(toPendingInviteRecord);
+  mapped.forEach(invite => upsertMockPendingInvite(invite));
   return mapped;
 }
 
